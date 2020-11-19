@@ -45,7 +45,7 @@ hairb = ['graphics/hairback.png']
 hairunique = ('graphics/hairbald.png')
 clothesm = ['graphics/bikinim.png']
 clothesf = ['graphics/bikinif.png']
-cellsize = 48
+cellsize = 16 * 3
 
 def truncated_normal(mean, stddev, minval, maxval):
     return np.clip(np.random.normal(mean, stddev), minval, maxval)
@@ -101,7 +101,7 @@ class Beast(pygame.sprite.Sprite):
         self.image.blit(self.head, (0, 0))
         self.image = pygame.transform.scale(self.image, (cellsize, cellsize))
         self.width = 0
-        self.hairlength = ghairlength
+        self.hairlength = ghairlength * gmelanine
         self.hairgreyness = 0
         self.hairback = 0
         if not self.female:
@@ -329,52 +329,40 @@ for i in beasts:
     all_sprites.add(i)
 
 
-map1 = np.ones((40, 40), dtype=int)
-map2 = np.random.randint(1, 10, size=(40, 40))
-print(map2)
+chunk = np.array([np.ones((40, 40), dtype=int), np.random.randint(1, 10, \
+                  size=(40, 40))])
 
 
 def setup_background():
     screen.fill((0, 0, 0))
     plain = tile_prepare('graphics/grass.png', (150, 180, 50))
     plains = [0, plain]
-    plant1 = tile_prepare('graphics/plants1.png', (140, 200, 50))
-    plant1f = tile_prepare('graphics/plants1.png', (140, 200, 50), flip=True)
-    plant2 = tile_prepare('graphics/plants2.png', (140, 200, 50))
-    plant2f = tile_prepare('graphics/plants2.png', (140, 200, 50), flip=True)
+    plant1 = tile_prepare('graphics/plants1.png', (150, 200, 50))
+    plant1f = tile_prepare('graphics/plants1.png', (150, 200, 50), flip=True)
+    plant2 = tile_prepare('graphics/plants2.png', (150, 200, 50))
+    plant2f = tile_prepare('graphics/plants2.png', (150, 200, 50), flip=True)
     decs = [0, 0, 0, 0, 0, 0, plant1, plant1f, plant2, plant2f]
     tile_width, tile_height = plain.get_width(), plain.get_height()
-    for x,y in product(range(0,tile_width * len(map1[0]), tile_width),
-                                 range(0,tile_height * len(map1[0]),tile_height)):
-        screen.blit(plains[map1[int(x/tile_width)][int(y/tile_height)]], (x, y))
-        if decs[map2[int(x/tile_width)][int(y/tile_height)]] != 0:
-            screen.blit(decs[map2[int(x/tile_width)][int(y/tile_height)]], (x, y))
-#        screen.blit(np.random.choice([plant1, plant1f, plant2, plant2f]), (x, y))
-
-# Цикл игры
+    for x,y in product(range(0,tile_width * len(chunk[0][0]), tile_width),
+                                 range(0,tile_height * len(chunk[0][0]),tile_height)):
+        screen.blit(plains[chunk[0][int(x/tile_width)][int(y/tile_height)]], (x, y))
+        if decs[chunk[1][int(x/tile_width)][int(y/tile_height)]] != 0:
+            screen.blit(decs[chunk[1][int(x/tile_width)][int(y/tile_height)]], (x, y))
+            
+            
 running = True
 while running:
-    # Держим цикл на правильной скорости
     clock.tick(FPS)
-    # Ввод процесса (события)
-    
     for event in pygame.event.get():
-        # проверка для закрытия окна
         if event.type == pygame.QUIT:
             running = False
-
-    # Обновление
     all_sprites.update()
     setup_background()
-    # Рендеринг
     all_sprites.draw(screen)
-    # После отрисовки всего, переворачиваем экран
     pygame.display.flip()
     for i in beasts:
-        i.safety_behave()
+#        i.safety_behave()
         i.sex_behave()
-        
-
 pygame.quit()
 
 
