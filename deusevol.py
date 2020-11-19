@@ -41,6 +41,7 @@ hairm = ('graphics/hairshort.png', 'graphics/hairmiddle.png', \
          'graphics/hairmohawk.png')
 hairf = ('graphics/hairlong.png', 'graphics/hairmiddlebig.png', \
          'graphics/hairmiddle.png')
+haira = ('graphics/hairafro.png', 'graphics/hairshortest.png')
 hairb = ['graphics/hairback.png']
 hairunique = ('graphics/hairbald.png')
 clothesm = ['graphics/bikinim.png']
@@ -104,6 +105,7 @@ class Beast(pygame.sprite.Sprite):
         self.hairlength = ghairlength * gmelanine
         self.hairgreyness = 0
         self.hairback = 0
+        self.gmelanine = gmelanine
         if not self.female:
             self.body = pygame.image.load('graphics/bodym.png')
             if self.muscularity < 0.25:
@@ -113,19 +115,23 @@ class Beast(pygame.sprite.Sprite):
             elif self.muscularity < 0.74:
                 self.width = int(cellsize * 0.1)
             self.body = pygame.transform.scale(self.body, (cellsize - self.width, cellsize))
-            self.hair = pygame.image.load(hairm[np.random.randint(0, len(hairm))])
-            self.hair = pygame.transform.scale(self.hair, (cellsize, cellsize))
+            if self.gmelanine > 0.3:
+                self.hair = pygame.image.load(hairm[np.random.randint(0, len(hairm))])
+            else:
+                self.hair = pygame.image.load(haira[np.random.randint(0, len(haira))])
         else:
             self.body = pygame.image.load('graphics/bodyf.png')
             self.body = pygame.transform.scale(self.body, (cellsize, cellsize))
             backlength = int(self.hairlength * (cellsize * (10/16)))
             self.hairback = pygame.image.load(hairb[0])
             self.hairback = pygame.transform.scale(self.hairback, (int(cellsize * (9/16)), backlength))
-            self.hair = pygame.image.load(hairf[np.random.randint(0, len(hairf))])
-            self.hair = pygame.transform.scale(self.hair, (cellsize, cellsize))
+            if self.gmelanine > 0.3:
+                self.hair = pygame.image.load(hairf[np.random.randint(0, len(hairf))])
+            else:
+                self.hair = pygame.image.load(haira[np.random.randint(0, len(haira))])
+        self.hair = pygame.transform.scale(self.hair, (cellsize, cellsize))
         self.image.blit(self.body, (self.width/2, 0))
         self.colorImage = pygame.Surface(self.image.get_size()).convert_alpha()
-        self.gmelanine = gmelanine
         self.gskincrange = gskincrange
         self.gskinbalance = gskinbalance
         self.ghairlight = self.gmelanine * self.gskincrange
