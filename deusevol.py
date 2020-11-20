@@ -6,37 +6,7 @@ import numpy as np
 width = 740
 height = 480
 FPS = 60
-
-# Задаем цвета
-'''
-from 0, 0, 0 to 256, 226, 216
-g never more than r
-b never more than g
-b atleast 10 points less than g (except of g < 10)
-g never more than 226
-parameters:
-    gskin_lightness, attract 1x
-    gskin_col_range(r-g or g-b from 30 to 90), attract 1x
-    gskin_balance(r-g/g-b), attract 0.5x
-    
-'''
-
-def tile_prepare(image, color, flip=False):
-    tile = pygame.image.load(image)
-    if flip:
-        tile = pygame.transform.flip(tile, True, False)
-    tile = pygame.transform.scale(tile, (cellsize, cellsize))
-    colortile = pygame.Surface(tile.get_size()).convert_alpha()
-    colortile.fill(color)
-    tile.blit(colortile, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
-    return tile
-
-# Создаем игру и окно
-pygame.init()
-pygame.mixer.init()
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption('Deus Evolution')
-clock = pygame.time.Clock()
+cellsize = 16 * 3
 hairm = ('graphics/hairshort.png', 'graphics/hairmiddle.png', \
          'graphics/hairmohawk.png')
 hairf = ('graphics/hairlong.png', 'graphics/hairmiddlebig.png', \
@@ -46,7 +16,25 @@ hairb = ['graphics/hairback.png']
 hairunique = ('graphics/hairbald.png')
 clothesm = ['graphics/bikinim.png']
 clothesf = ['graphics/bikinif.png']
-cellsize = 16 * 3
+
+def tile_prepare(image, color=0, scale=(cellsize, cellsize), flip=False):
+    tile = pygame.image.load(image)
+    if flip:
+        tile = pygame.transform.flip(tile, True, False)
+    tile = pygame.transform.scale(tile, scale)
+    if color:
+        colortile = pygame.Surface(tile.get_size()).convert_alpha()
+        colortile.fill(color)
+        tile.blit(colortile, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
+    else:
+        tile.blit(tile, (0,0))
+    return tile
+
+pygame.init()
+pygame.mixer.init()
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption('Deus Evolution')
+clock = pygame.time.Clock()
 
 def truncated_normal(mean, stddev, minval, maxval):
     return np.clip(np.random.normal(mean, stddev), minval, maxval)
@@ -96,24 +84,42 @@ class Beast(pygame.sprite.Sprite):
         self.gmuscularity = gmuscularity
         self.gspeed = gspeed
         self.muscularity = gmuscularity - (female * 0.3 * gmuscularity) 
-        self.image = pygame.Surface((16, 16))
-        self.image = pygame.image.load('graphics/shadow.png')
-        self.head = pygame.image.load('graphics/head.png')
-        self.image.blit(self.head, (0, 0))
+        self.image = pygame.Surface((16, 17))
+        self.image = pygame.image.load('graphics/head.png')
+        self.image.blit(self.image, (0, 0))
         self.image = pygame.transform.scale(self.image, (cellsize, cellsize))
         self.width = 0
         self.hairlength = ghairlength * gmelanine
         self.hairgreyness = 0
         self.hairback = 0
         self.gmelanine = gmelanine
+        self.gskincrange = gskincrange
+        self.gskinbalance = gskinbalance
+        self.ghairlight = self.gmelanine * self.gskincrange
+        self.ghairred = ghairred
+        hred, hgreen, hblue = 30, 30, 30
+        hred += int(self.ghairlight * 225)
+        hgreen += int(((hred - 30)/2) + ((hred - 30)/2) * (1 - self.ghairred))
+        if hred > 210 and self.ghairred > 0.5:
+            self.frek = tile_prepare('graphics/freckles.png', (hred, hgreen, hblue))
+            self.frek.set_alpha(255 * (ghairred - 0.5) * 2)
+            self.image.blit(self.frek, (0, 0))
+        if self.hairgreyness < 0.5:
+            hgreen = hgreen + ((hred - hgreen) * (self.hairgreyness * 2))
+            hblue = hblue + ((hred - hblue) * (self.hairgreyness * 2))
+        else:
+            hred = hred + ((255 - hred) * ((self.hairgreyness - 0.5) * 2))
+            hgreen = hred
+            hblue = hgreen
         if not self.female:
             self.body = pygame.image.load('graphics/bodym.png')
-            if self.muscularity < 0.25:
-                self.width = int(cellsize * 0.3)
-            elif self.muscularity < 0.5:
-                self.width = int(cellsize * 0.2)
-            elif self.muscularity < 0.74:
-                self.width = int(cellsize * 0.1)
+            self.width = int((1 - self.muscularity) * 0.3 * cellsize)
+#            if self.muscularity < 0.25:
+#                self.width = int(cellsize * 0.3)
+#            elif self.muscularity < 0.5:
+#                self.width = int(cellsize * 0.2)
+#            elif self.muscularity < 0.75:
+#                self.width = int(cellsize * 0.1)
             self.body = pygame.transform.scale(self.body, (cellsize - self.width, cellsize))
             if self.gmelanine > 0.3:
                 self.hair = pygame.image.load(hairm[np.random.randint(0, len(hairm))])
@@ -123,8 +129,7 @@ class Beast(pygame.sprite.Sprite):
             self.body = pygame.image.load('graphics/bodyf.png')
             self.body = pygame.transform.scale(self.body, (cellsize, cellsize))
             backlength = int(self.hairlength * (cellsize * (10/16)))
-            self.hairback = pygame.image.load(hairb[0])
-            self.hairback = pygame.transform.scale(self.hairback, (int(cellsize * (9/16)), backlength))
+            self.hairback = tile_prepare(hairb[0], (hred, hgreen, hblue), scale=(int(cellsize * (9/16)), backlength))
             if self.gmelanine > 0.3:
                 self.hair = pygame.image.load(hairf[np.random.randint(0, len(hairf))])
             else:
@@ -132,49 +137,29 @@ class Beast(pygame.sprite.Sprite):
         self.hair = pygame.transform.scale(self.hair, (cellsize, cellsize))
         self.image.blit(self.body, (self.width/2, 0))
         self.colorImage = pygame.Surface(self.image.get_size()).convert_alpha()
-        self.gskincrange = gskincrange
-        self.gskinbalance = gskinbalance
-        self.ghairlight = self.gmelanine * self.gskincrange
-        self.ghairred = ghairred
         red = 30 + int(225 * self.gmelanine)
         if red > 50:
             blue = int((red - 50) * self.gskincrange)
         else:
             blue = int(red * self.gskincrange)
-        green = int(blue + (0.5 * (red - blue)) + (0.5 * (red - blue)) * \
+        green = int(blue + (0.5 * (red - blue)) + (0.4 * (red - blue)) * \
                     (1 - self.gskinbalance))
         self.colorImage.fill((red, green, blue))
         self.image.blit(self.colorImage, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
-        red, green, blue = 30, 30, 30
-        red += int(self.ghairlight * 225)
-        green += int(((red - 30)/2) + ((red - 30)/2) * (1 - self.ghairred))
-        if red > 210 and self.ghairred > 0.5:
-            self.frek = tile_prepare('graphics/freckles.png', (red, green, blue))
-            self.frek.set_alpha(255 * (ghairred - 0.5) * 2)
-            self.image.blit(self.frek, (0, 0))
-        if self.hairgreyness < 0.5:
-            green = green + ((red - green) * (self.hairgreyness * 2))
-            blue = blue + ((red - blue) * (self.hairgreyness * 2))
-        else:
-            red = red + ((255 - red) * ((self.hairgreyness - 0.5) * 2))
-            green = red
-            blue = green
+        self.bodylayer = self.image.copy()
+        self.shadow = tile_prepare('graphics/shadow.png')
+        self.image.blit(self.shadow, (0, 0))
         if self.hairback:
-            self.colorhairback = pygame.Surface(self.hairback.get_size()).convert_alpha()
-            self.colorhairback.fill((red, green, blue))
-            self.hairback.blit(self.colorhairback, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
-            self.imagec = self.image.copy()
             self.image.blit(self.hairback, (cellsize * (4/16), cellsize * (4/16)))
-            self.image.blit(self.imagec, (0, 0))
+        self.image.blit(self.bodylayer, (0, 0))
         self.colorhair = pygame.Surface(self.hair.get_size()).convert_alpha()
-        self.colorhair.fill((red, green, blue))
+        self.colorhair.fill((hred, hgreen, hblue))
         self.hair.blit(self.colorhair, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
         self.image.blit(self.hair, (0, 0))
         self.imageunflip = self.image
         self.imageflip = pygame.transform.flip(self.image, True, False)
         self.attract = self.gmelanine
-        self.speed = gspeed - (female * 0.2 * gspeed) - \
-        (gmelanine * 0.1 * gspeed)
+        self.speed = gspeed - (female * 0.2 * gspeed) - (gmelanine * 0.1 * gspeed)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
