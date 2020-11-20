@@ -104,13 +104,10 @@ class Beast(pygame.sprite.Sprite):
             self.frek = tile_prepare('graphics/freckles.png', (hred, hgreen, hblue))
             self.frek.set_alpha(255 * (ghairred - 0.5) * 2)
             self.image.blit(self.frek, (0, 0))
-        if self.hairgreyness < 0.5:
-            hgreen = hgreen + ((hred - hgreen) * (self.hairgreyness * 2))
-            hblue = hblue + ((hred - hblue) * (self.hairgreyness * 2))
-        else:
-            hred = hred + ((255 - hred) * ((self.hairgreyness - 0.5) * 2))
-            hgreen = hred
-            hblue = hgreen
+        hredgrey = (255 - hred) * ((self.hairgreyness - 0.5) * 2)
+        hred = int((abs(hredgrey) + hredgrey)/2 + hred)
+        hgreen = int(hgreen + ((hred - hgreen) * self.hairgreyness))
+        hblue = int(hblue + ((hred - hblue) * self.hairgreyness))
         if not self.female:
             self.body = pygame.image.load('graphics/bodym.png')
             self.width = int((1 - self.muscularity) * 0.3 * cellsize)
