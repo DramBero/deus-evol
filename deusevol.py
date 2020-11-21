@@ -39,45 +39,11 @@ clock = pygame.time.Clock()
 def truncated_normal(mean, stddev, minval, maxval):
     return np.clip(np.random.normal(mean, stddev), minval, maxval)
 
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((16, 16))
-        self.image.fill((50, 10, 0))
-        self.rect = self.image.get_rect()
-        self.rect.centerx = width / 2
-        self.rect.bottom = height - 10
-        self.speedx = 0
-        self.speedy = 0
-
-    def update(self):
-        self.speedx = 0
-        self.speedy = 0
-        keystate = pygame.key.get_pressed()
-        if keystate[pygame.K_a]:
-            self.speedx = -5
-        if keystate[pygame.K_d]:
-            self.speedx = 5
-        if keystate[pygame.K_w]:
-            self.speedy = -5
-        if keystate[pygame.K_s]:
-            self.speedy = 5
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
-        if self.rect.right > width:
-            self.rect.right = width
-        if self.rect.left < 0:
-            self.rect.left = 0
-        if self.rect.top < 0:
-            self.rect.top = 0
-        if self.rect.bottom > height:
-            self.rect.bottom = height
-
-
-class Beast(pygame.sprite.Sprite):
+class Human(pygame.sprite.Sprite):
     def __init__(self, x, y, gmelanine, gskincrange, gskinbalance, \
                  female, gmuscularity, gspeed, ghairred, ghairlength):
         pygame.sprite.Sprite.__init__(self)
+        self.player = False
         self.married = False
         self.dead = False
         self.female = female
@@ -111,12 +77,6 @@ class Beast(pygame.sprite.Sprite):
         if not self.female:
             self.body = pygame.image.load('graphics/bodym.png')
             self.width = int((1 - self.muscularity) * 0.3 * cellsize)
-#            if self.muscularity < 0.25:
-#                self.width = int(cellsize * 0.3)
-#            elif self.muscularity < 0.5:
-#                self.width = int(cellsize * 0.2)
-#            elif self.muscularity < 0.75:
-#                self.width = int(cellsize * 0.1)
             self.body = pygame.transform.scale(self.body, (cellsize - self.width, cellsize))
             if self.gmelanine > 0.3:
                 self.hair = pygame.image.load(hairm[np.random.randint(0, len(hairm))])
@@ -135,11 +95,8 @@ class Beast(pygame.sprite.Sprite):
         self.image.blit(self.body, (self.width/2, 0))
         self.colorImage = pygame.Surface(self.image.get_size()).convert_alpha()
         red = 30 + int(225 * self.gmelanine)
-        if red > 50:
-            blue = int((red - 50) * self.gskincrange)
-        else:
-            blue = int(red * self.gskincrange)
-        green = int(blue + (0.5 * (red - blue)) + (0.4 * (red - blue)) * \
+        blue = int(red * 0.6 * self.gskincrange)
+        green = int(blue + (0.4 * (red - blue)) + (0.4 * (red - blue)) * \
                     (1 - self.gskinbalance))
         self.colorImage.fill((red, green, blue))
         self.image.blit(self.colorImage, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
@@ -193,7 +150,7 @@ class Beast(pygame.sprite.Sprite):
         self.update(-1 * dx, -1 * dy)
             
     def sex_behave(self):
-        if not self.female and not self.married:
+        if not self.female and not self.married and not self.player:
             prefered = []
             for beast in beasts:
                 if beast.female and not beast.married:
@@ -271,7 +228,7 @@ class Beast(pygame.sprite.Sprite):
         ghairred = truncated_normal(\
             (self.ghairred + beast.ghairred)/2, 0.05, 0.001, 0.999)
         ghairlength = np.random.random()
-        child = Beast(x, y, gmelanine, gskincrange, \
+        child = Human(x, y, gmelanine, gskincrange, \
                             gskinbalance, female, gmuscularity, gspeed, \
                             ghairred, ghairlength)
         beasts.append(child)
@@ -285,40 +242,83 @@ class Beast(pygame.sprite.Sprite):
         self.image.blit(self.colorImage, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
 
     def body_wear(self, cloth, color):
+        self.image = self.imageunflip
         self.cloth = pygame.image.load(cloth)
         self.cloth = pygame.transform.scale(self.cloth, (cellsize - self.width, cellsize))
         self.colorcloth = pygame.Surface(self.hair.get_size()).convert_alpha()
         self.colorcloth.fill((color))
         self.cloth.blit(self.colorcloth, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
         self.image.blit(self.cloth, (self.width/2, 0))
+        self.imageunflip = self.image
+        self.imageflip = pygame.transform.flip(self.image, True, False)
+
+
+class Player(Human):
+    def __init__(self, x, y, gmelanine, gskincrange, gskinbalance, \
+                 female, gmuscularity, gspeed, ghairred, ghairlength):
+        Human.__init__(self, x, y, gmelanine, gskincrange, gskinbalance, \
+                 female, gmuscularity, gspeed, ghairred, ghairlength)
+        self.player = True
+
+    def update(self):
+        self.speedx = 0
+        self.speedy = 0
+        keystate = pygame.key.get_pressed()
+        if keystate[pygame.K_a]:
+            self.image = self.imageflip 
+            self.speedx = -5
+        if keystate[pygame.K_d]:
+            self.image = self.imageunflip 
+            self.speedx = 5
+        if keystate[pygame.K_w]:
+            self.speedy = -5
+        if keystate[pygame.K_s]:
+            self.speedy = 5
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy
+        if self.rect.right > width:
+            self.rect.right = width
+        if self.rect.left < 0:
+            self.rect.left = 0
+        if self.rect.top < 0:
+            self.rect.top = 0
+        if self.rect.bottom > height:
+            self.rect.bottom = height
 
 
 all_sprites = pygame.sprite.Group()
 
 beast_coords = []
 beasts = []
+x_coord = np.random.randint(0, int(width/cellsize)) * cellsize
+y_coord = np.random.randint(0, int(height/cellsize)) * cellsize
+beast_coords.append((x_coord, y_coord))
+beasts.append(Player(x_coord, y_coord, np.random.random(), \
+                            np.random.random(), np.random.random(), \
+                            np.random.choice((0, 1)), np.random.random(), \
+                            np.random.random(), np.random.random(), \
+                            np.random.random()))
 while len(beast_coords) < 40:
     x_coord = np.random.randint(0, int(width/cellsize)) * cellsize
     y_coord = np.random.randint(0, int(height/cellsize)) * cellsize
     if (x_coord, y_coord) not in beast_coords:
         beast_coords.append((x_coord, y_coord))
-        beasts.append(Beast(x_coord, y_coord, np.random.random(), \
+        beasts.append(Human(x_coord, y_coord, np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.random()))
-        
-player = Player()
 
-#beast1 = Beast(beast_coords[0][0], beast_coords[0][1])
+
+#beast1 = Human(beast_coords[0][0], beast_coords[0][1])
 
 #all_sprites.add(player)
 for i in beasts:
     all_sprites.add(i)
 
 
-chunk = np.array([np.ones((40, 40), dtype=int), np.random.randint(1, 10, \
-                  size=(40, 40))])
+chunk = np.array([np.ones((40, 40), dtype=int), \
+                  np.random.randint(1, 10, size=(40, 40))])
 
 
 def setup_background():
