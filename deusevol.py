@@ -160,8 +160,8 @@ class Human(pygame.sprite.Sprite):
                 else:
                     prefered.remove(prefered[0])
             if prefered:
-                if abs(self.rect.x - prefered[0].rect.x) > 1 or \
-                abs(self.rect.y - prefered[0].rect.y) > 1:
+                if abs(self.pos[0] - prefered[0].pos[0]) > 1 or \
+                abs(self.pos[1] - prefered[0].pos[1]) > 1:
                     self.move_towards_player(prefered[0])
                 else:
                     prefered[0].marry(self)
