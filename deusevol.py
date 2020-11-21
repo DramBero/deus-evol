@@ -35,14 +35,16 @@ pygame.mixer.init()
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption('Deus Evolution')
 clock = pygame.time.Clock()
+dt = 0
 
 def truncated_normal(mean, stddev, minval, maxval):
     return np.clip(np.random.normal(mean, stddev), minval, maxval)
 
 class Human(pygame.sprite.Sprite):
-    def __init__(self, x, y, gmelanine, gskincrange, gskinbalance, \
+    def __init__(self, pos, x, y, gmelanine, gskincrange, gskinbalance, \
                  female, gmuscularity, gspeed, ghairred, ghairlength):
         pygame.sprite.Sprite.__init__(self)
+        self.pos = pygame.Vector2(pos)
         self.player = False
         self.married = False
         self.dead = False
@@ -120,15 +122,12 @@ class Human(pygame.sprite.Sprite):
         self.speedx = 0
         self.speedy = 0
 
-    def update(self, x=0, y=0):
-        self.speedx = x
-        if self.speedx < 0:
-            self.image = self.imageflip    
-        else:
-            self.image = self.imageunflip
-        self.speedy = y
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
+    def update(self, events=0, dt=clock.tick(FPS), x=0, y=0):
+        move = pygame.Vector2((0, 0))
+        move += (x, y)
+        if move.length() > 0: move.normalize_ip()
+        self.pos += move*(dt/5)
+        self.rect.center = self.pos
             
     def move_towards_player(self, beasty):
         dx, dy = beasty.rect.x - self.rect.x, beasty.rect.y - self.rect.y
@@ -137,7 +136,7 @@ class Human(pygame.sprite.Sprite):
             dx, dy = dx/dist, dy/dist
         else:
             pass
-        self.update(dx, dy)
+        self.update(x=dx, y=dy)
 
     def move_awayfrom(self, beasty):
         dx, dy = beasty.rect.x - self.rect.x, beasty.rect.y - self.rect.y
@@ -145,9 +144,9 @@ class Human(pygame.sprite.Sprite):
         if dist:
             dx, dy = dx/dist, dy/dist
         else:
-            self.rect.x += dx * (1 + self.speed) + 5
+#           self.rect.x += dx * (1 + self.speed) + 5
             pass
-        self.update(-1 * dx, -1 * dy)
+        self.update(x = -1 * dx, y = -1 * dy)
             
     def sex_behave(self):
         if not self.female and not self.married and not self.player:
@@ -166,7 +165,7 @@ class Human(pygame.sprite.Sprite):
                     self.move_towards_player(prefered[0])
                 else:
                     prefered[0].marry(self)
-                    self.rect.x = prefered[0].rect.x + cellsize
+                    self.pos[0] = prefered[0].pos[0] + cellsize
                     
     def safety_behave(self):
         if self.female or self.married or self.dead:
@@ -228,7 +227,7 @@ class Human(pygame.sprite.Sprite):
         ghairred = truncated_normal(\
             (self.ghairred + beast.ghairred)/2, 0.05, 0.001, 0.999)
         ghairlength = np.random.random()
-        child = Human(x, y, gmelanine, gskincrange, \
+        child = Human((x, y), x, y, gmelanine, gskincrange, \
                             gskinbalance, female, gmuscularity, gspeed, \
                             ghairred, ghairlength)
         beasts.append(child)
@@ -254,13 +253,29 @@ class Human(pygame.sprite.Sprite):
 
 
 class Player(Human):
-    def __init__(self, x, y, gmelanine, gskincrange, gskinbalance, \
+    def __init__(self, pos, x, y, gmelanine, gskincrange, gskinbalance, \
                  female, gmuscularity, gspeed, ghairred, ghairlength):
-        Human.__init__(self, x, y, gmelanine, gskincrange, gskinbalance, \
+        Human.__init__(self, pos, x, y, gmelanine, gskincrange, gskinbalance, \
                  female, gmuscularity, gspeed, ghairred, ghairlength)
         self.player = True
 
-    def update(self):
+    def update(self, events, dt):
+        pressed = pygame.key.get_pressed()
+        move = pygame.Vector2((0, 0))
+        if pressed[pygame.K_w]: 
+            move += (0, -5)
+        if pressed[pygame.K_a]: 
+            self.image = self.imageflip 
+            move += (-5, 0)
+        if pressed[pygame.K_s]: 
+            move += (0, 5)
+        if pressed[pygame.K_d]: 
+            self.image = self.imageunflip 
+            move += (5, 0)
+        if move.length() > 0: move.normalize_ip()
+        self.pos += move*(dt/5)
+        self.rect.center = self.pos
+'''       
         self.speedx = 0
         self.speedy = 0
         keystate = pygame.key.get_pressed()
@@ -284,16 +299,30 @@ class Player(Human):
             self.rect.top = 0
         if self.rect.bottom > height:
             self.rect.bottom = height
+'''
+
+
+class YAwareGroup(pygame.sprite.Group):
+    def by_y(self, spr):
+        return spr.pos.y
+
+    def draw(self, surface):
+        sprites = self.sprites()
+        surface_blit = surface.blit
+        for spr in sorted(sprites, key=self.by_y):
+            self.spritedict[spr] = surface_blit(spr.image, spr.rect)
+        self.lostsprites = []
 
 
 all_sprites = pygame.sprite.Group()
 
 beast_coords = []
 beasts = []
+sprites = []
 x_coord = np.random.randint(0, int(width/cellsize)) * cellsize
 y_coord = np.random.randint(0, int(height/cellsize)) * cellsize
 beast_coords.append((x_coord, y_coord))
-beasts.append(Player(x_coord, y_coord, np.random.random(), \
+beasts.append(Player((x_coord, y_coord), x_coord, y_coord, np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
@@ -303,18 +332,13 @@ while len(beast_coords) < 40:
     y_coord = np.random.randint(0, int(height/cellsize)) * cellsize
     if (x_coord, y_coord) not in beast_coords:
         beast_coords.append((x_coord, y_coord))
-        beasts.append(Human(x_coord, y_coord, np.random.random(), \
+        beasts.append(Human((x_coord, y_coord), x_coord, y_coord, np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.random()))
 
-
-#beast1 = Human(beast_coords[0][0], beast_coords[0][1])
-
-#all_sprites.add(player)
-for i in beasts:
-    all_sprites.add(i)
+sprites = YAwareGroup(beasts)
 
 
 chunk = np.array([np.ones((40, 40), dtype=int), \
@@ -340,13 +364,14 @@ def setup_background():
             
 running = True
 while running:
-    clock.tick(FPS)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+    events = pygame.event.get()
+    for e in events:
+        if e.type == pygame.QUIT:
             running = False
-    all_sprites.update()
     setup_background()
-    all_sprites.draw(screen)
+    sprites.update(events, dt)
+    sprites.draw(screen)
+    dt = clock.tick(FPS)
     pygame.display.flip()
     for i in beasts:
 #        i.safety_behave()
@@ -354,3 +379,12 @@ while running:
 pygame.quit()
 
 
+'''
+        self.speedx = x
+        if self.speedx < 0:
+            self.image = self.imageflip    
+        else:
+            self.image = self.imageunflip
+        self.speedy = y
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy'''
