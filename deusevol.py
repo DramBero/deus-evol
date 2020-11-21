@@ -6,7 +6,9 @@ import numpy as np
 width = 740
 height = 480
 FPS = 60
-cellsize = 16 * 3
+cellscale = 2
+cellsize = 16 + 16 * cellscale
+camera = [0, 0]
 hairm = ('graphics/hairshort.png', 'graphics/hairmiddle.png', \
          'graphics/hairmohawk.png')
 hairf = ('graphics/hairlong.png', 'graphics/hairmiddlebig.png', \
@@ -126,7 +128,11 @@ class Human(pygame.sprite.Sprite):
         move = pygame.Vector2((0, 0))
         move += (x, y)
         if move.length() > 0: move.normalize_ip()
-        self.pos += move*(dt/5)
+        if x < 0:
+            self.image = self.imageflip
+        else:
+            self.image = self.imageunflip 
+        self.pos += move*(dt/5)*(cellsize/16)*0.3
         self.rect.center = self.pos
             
     def move_towards_player(self, beasty):
@@ -160,8 +166,8 @@ class Human(pygame.sprite.Sprite):
                 else:
                     prefered.remove(prefered[0])
             if prefered:
-                if abs(self.pos[0] - prefered[0].pos[0]) > 1 or \
-                abs(self.pos[1] - prefered[0].pos[1]) > 1:
+                if abs(self.pos[0] - prefered[0].pos[0]) > cellsize * (1/16) + 2 or \
+                abs(self.pos[1] - prefered[0].pos[1]) > cellsize * (1/16) + 2:
                     self.move_towards_player(prefered[0])
                 else:
                     prefered[0].marry(self)
@@ -211,8 +217,8 @@ class Human(pygame.sprite.Sprite):
                 self.givebirth(beast, 5)
             
     def givebirth(self, beast, lower=1):
-        x = self.rect.x
-        y = self.rect.y + cellsize * lower
+        x = self.pos[0]
+        y = self.pos[1] + cellsize * lower
         gmelanine = truncated_normal(\
             (self.gmelanine + beast.gmelanine)/2, 0.05, 0.001, 0.999)
         gskincrange = truncated_normal(\
@@ -260,46 +266,35 @@ class Player(Human):
         self.player = True
 
     def update(self, events, dt):
+        global camera
         pressed = pygame.key.get_pressed()
         move = pygame.Vector2((0, 0))
         if pressed[pygame.K_w]: 
-            move += (0, -5)
+            move += (0, -1)
         if pressed[pygame.K_a]: 
             self.image = self.imageflip 
-            move += (-5, 0)
+            move += (-1, 0)
         if pressed[pygame.K_s]: 
-            move += (0, 5)
+            move += (0, 1)
         if pressed[pygame.K_d]: 
             self.image = self.imageunflip 
-            move += (5, 0)
+            move += (1, 0)
         if move.length() > 0: move.normalize_ip()
-        self.pos += move*(dt/5)
+        if self.rect.left < cellsize/16 + 1:
+            move[0] = (abs(move[0]) + move[0])/2
+        if self.rect.top < cellsize/16 + 3:
+            move[1] = (abs(move[1]) + move[1])/2
+        self.pos += move*(dt/5)*(cellsize/16)*0.3
         self.rect.center = self.pos
-'''       
-        self.speedx = 0
-        self.speedy = 0
-        keystate = pygame.key.get_pressed()
-        if keystate[pygame.K_a]:
-            self.image = self.imageflip 
-            self.speedx = -5
-        if keystate[pygame.K_d]:
-            self.image = self.imageunflip 
-            self.speedx = 5
-        if keystate[pygame.K_w]:
-            self.speedy = -5
-        if keystate[pygame.K_s]:
-            self.speedy = 5
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
-        if self.rect.right > width:
-            self.rect.right = width
-        if self.rect.left < 0:
-            self.rect.left = 0
-        if self.rect.top < 0:
-            self.rect.top = 0
-        if self.rect.bottom > height:
-            self.rect.bottom = height
-'''
+        if self.pos[0] > width/2:
+            camera[0] = self.pos[0] - width/2
+        else:
+            camera[0] = 0
+        if self.pos[1] > height/2:
+            camera[1] = self.pos[1] - height/2
+        else:
+            camera[1] = 0
+        print(camera)
 
 
 class YAwareGroup(pygame.sprite.Group):
@@ -310,26 +305,26 @@ class YAwareGroup(pygame.sprite.Group):
         sprites = self.sprites()
         surface_blit = surface.blit
         for spr in sorted(sprites, key=self.by_y):
-            self.spritedict[spr] = surface_blit(spr.image, spr.rect)
+            self.spritedict[spr] = surface_blit(spr.image, (spr.rect.x - camera[0], spr.rect.y - camera[1]))
         self.lostsprites = []
 
 
 all_sprites = pygame.sprite.Group()
-
-beast_coords = []
-beasts = []
-sprites = []
 x_coord = np.random.randint(0, int(width/cellsize)) * cellsize
 y_coord = np.random.randint(0, int(height/cellsize)) * cellsize
-beast_coords.append((x_coord, y_coord))
-beasts.append(Player((x_coord, y_coord), x_coord, y_coord, np.random.random(), \
+player = Player((width/2, height/2), x_coord, y_coord, np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
-                            np.random.random()))
-while len(beast_coords) < 40:
-    x_coord = np.random.randint(0, int(width/cellsize)) * cellsize
-    y_coord = np.random.randint(0, int(height/cellsize)) * cellsize
+                            np.random.random())
+beast_coords = []
+beasts = []
+sprites = []
+beast_coords.append((x_coord, y_coord))
+beasts.append(player)
+while len(beast_coords) < 30:
+    x_coord = np.random.randint(1, int(width/cellsize)) * cellsize
+    y_coord = np.random.randint(1, int(height/cellsize)) * cellsize
     if (x_coord, y_coord) not in beast_coords:
         beast_coords.append((x_coord, y_coord))
         beasts.append(Human((x_coord, y_coord), x_coord, y_coord, np.random.random(), \
@@ -337,8 +332,6 @@ while len(beast_coords) < 40:
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.random()))
-
-sprites = YAwareGroup(beasts)
 
 
 chunk = np.array([np.ones((40, 40), dtype=int), \
@@ -357,25 +350,28 @@ def setup_background():
     tile_width, tile_height = plain.get_width(), plain.get_height()
     for x,y in product(range(0,tile_width * len(chunk[0][0]), tile_width),
                                  range(0,tile_height * len(chunk[0][0]),tile_height)):
-        screen.blit(plains[chunk[0][int(x/tile_width)][int(y/tile_height)]], (x, y))
+        coord = [x - camera[0], y - camera[1]]
+        screen.blit(plains[chunk[0][int(x/tile_width)][int(y/tile_height)]], coord)
         if decs[chunk[1][int(x/tile_width)][int(y/tile_height)]] != 0:
-            screen.blit(decs[chunk[1][int(x/tile_width)][int(y/tile_height)]], (x, y))
+            screen.blit(decs[chunk[1][int(x/tile_width)][int(y/tile_height)]], coord)
             
             
 running = True
 while running:
+    sprites = YAwareGroup(beasts)
     events = pygame.event.get()
     for e in events:
         if e.type == pygame.QUIT:
             running = False
-    setup_background()
     sprites.update(events, dt)
+    setup_background()
     sprites.draw(screen)
     dt = clock.tick(FPS)
     pygame.display.flip()
     for i in beasts:
 #        i.safety_behave()
         i.sex_behave()
+    
 pygame.quit()
 
 
