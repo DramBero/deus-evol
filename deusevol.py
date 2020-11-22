@@ -6,7 +6,7 @@ import numpy as np
 width = 740
 height = 480
 FPS = 60
-cellscale = 2
+cellscale = 3
 cellsize = 16 + 16 * cellscale
 camera = [0, 0]
 hairm = ('graphics/hairshort.png', 'graphics/hairmiddle.png', \
@@ -38,6 +38,7 @@ screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption('Deus Evolution')
 clock = pygame.time.Clock()
 dt = 0
+end_coords = [0, 0]
 
 def truncated_normal(mean, stddev, minval, maxval):
     return np.clip(np.random.normal(mean, stddev), minval, maxval)
@@ -132,6 +133,14 @@ class Human(pygame.sprite.Sprite):
             self.image = self.imageflip
         else:
             self.image = self.imageunflip 
+        if self.rect.left < 2 * cellsize/16:
+            move[0] = (abs(move[0]) + move[0])/2
+        if self.rect.top < 2 * cellsize/16:
+            move[1] = (abs(move[1]) + move[1])/2
+        if self.rect.right > end_coords[0] - 2 * cellsize/16:
+            move[0] = (move[0] - abs(move[0]))/2
+        if self.rect.bottom > end_coords[1] - 2 * cellsize/16:
+            move[1] = (move[1] - abs(move[1]))/2
         self.pos += move*(dt/5)*(cellsize/16)*0.3
         self.rect.center = self.pos
             
@@ -170,8 +179,9 @@ class Human(pygame.sprite.Sprite):
                 abs(self.pos[1] - prefered[0].pos[1]) > cellsize * (1/16) + 2:
                     self.move_towards_player(prefered[0])
                 else:
-                    prefered[0].marry(self)
-                    self.pos[0] = prefered[0].pos[0] + cellsize
+                    if not prefered[0].player:
+                        prefered[0].marry(self)
+                        self.pos[0] = prefered[0].pos[0] + cellsize
                     
     def safety_behave(self):
         if self.female or self.married or self.dead:
@@ -200,12 +210,18 @@ class Human(pygame.sprite.Sprite):
                         beast.die()
 
     def marry(self, beast):
+        self.married = True
+        beast.married = True
         if self.female:
-            self.married = True
-            beast.married = True
             self.body_wear(clothesf[0], (120, 190, 0))
+        else:
+            self.body_wear(clothesm[0], (120, 190, 0))
+        if beast.female:
+            beast.body_wear(clothesf[0], (120, 190, 0))
+        else:
             beast.body_wear(clothesm[0], (120, 190, 0))
-            chance = np.random.random()
+        chance = np.random.random()
+        if self.female and not beast.female:
             self.givebirth(beast)
             if chance > 0.99:
                 self.givebirth(beast, 2)
@@ -215,6 +231,16 @@ class Human(pygame.sprite.Sprite):
                 self.givebirth(beast, 4)
             if chance > 0.99999:
                 self.givebirth(beast, 5)
+        if beast.female and not self.female:
+            beast.givebirth(self)
+            if chance > 0.99:
+                beast.givebirth(self, 2)
+            if chance > 0.999:
+                beast.givebirth(self, 3)
+            if chance > 0.9999:
+                beast.givebirth(self, 4)
+            if chance > 0.99999:
+                beast.givebirth(self, 5)
             
     def givebirth(self, beast, lower=1):
         x = self.pos[0]
@@ -279,22 +305,41 @@ class Player(Human):
         if pressed[pygame.K_d]: 
             self.image = self.imageunflip 
             move += (1, 0)
+        if pressed[pygame.K_SPACE]:
+            closest = []
+            for i in beasts:
+                if (abs(i.pos[0] - self.pos[0]) < (cellsize/16 * 5)) and \
+                (abs(i.pos[1] - self.pos[1]) < (cellsize/16 * 5)) and not \
+                i.player and not i.married:
+                    closest.append(i)
+            if len(closest) == 1:
+                print(closest)
+                print(self.pos[0], self.pos[1])
+                print(closest[0].pos[0], closest[0].pos[1])
+                self.marry(closest[0])
         if move.length() > 0: move.normalize_ip()
-        if self.rect.left < cellsize/16 + 1:
+        if self.rect.left < 2 * cellsize/16:
             move[0] = (abs(move[0]) + move[0])/2
-        if self.rect.top < cellsize/16 + 3:
+        if self.rect.top < 2 * cellsize/16:
             move[1] = (abs(move[1]) + move[1])/2
+        if self.rect.right > end_coords[0] - 2 * cellsize/16:
+            move[0] = (move[0] - abs(move[0]))/2
+        if self.rect.bottom > end_coords[1] - 2 * cellsize/16:
+            move[1] = (move[1] - abs(move[1]))/2
         self.pos += move*(dt/5)*(cellsize/16)*0.3
         self.rect.center = self.pos
-        if self.pos[0] > width/2:
+        if self.pos[0] > width/2 and self.pos[0] <= end_coords[0] - width/2:
             camera[0] = self.pos[0] - width/2
-        else:
+        elif self.pos[0] <= width/2:
             camera[0] = 0
-        if self.pos[1] > height/2:
+        elif self.pos[0] > end_coords[0]:
+            camera[0] = end_coords[0] - width/2
+        if self.pos[1] > height/2 and self.pos[1] <= end_coords[1] - height/2:
             camera[1] = self.pos[1] - height/2
-        else:
+        elif self.pos[1] <= height/2:
             camera[1] = 0
-        print(camera)
+        elif self.pos[0] > end_coords[1]:
+            camera[0] = end_coords[1] - height/2
 
 
 class YAwareGroup(pygame.sprite.Group):
@@ -334,11 +379,12 @@ while len(beast_coords) < 30:
                             np.random.random()))
 
 
-chunk = np.array([np.ones((40, 40), dtype=int), \
-                  np.random.randint(1, 10, size=(40, 40))])
+chunk = np.array([np.ones((50, 50), dtype=int), \
+                  np.random.randint(1, 10, size=(50, 50))])
 
 
 def setup_background():
+    global end_coords
     screen.fill((0, 0, 0))
     plain = tile_prepare('graphics/grass.png', (150, 180, 50))
     plains = [0, plain]
@@ -354,6 +400,7 @@ def setup_background():
         screen.blit(plains[chunk[0][int(x/tile_width)][int(y/tile_height)]], coord)
         if decs[chunk[1][int(x/tile_width)][int(y/tile_height)]] != 0:
             screen.blit(decs[chunk[1][int(x/tile_width)][int(y/tile_height)]], coord)
+        end_coords = [x + tile_width, y + tile_height]
             
             
 running = True
