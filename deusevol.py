@@ -7,6 +7,22 @@ width = 740
 height = 480
 FPS = 60
 cellscale = 3
+ts_scale = [1/60, 1, 60, 60*2, 60*4, 60*6, 60*12, 60*24, 60*24*7, 60*24*30, 60*24*365]
+ts_index = 1
+time_speed = 1000*60*ts_scale[ts_index]
+
+# 0 - one year in a second, 
+# 1 - one year in a minute, 
+# 2 - one year in an hour
+# 3 - one year in 2 hours
+# 3 - one year in 4 hours
+# 3 - one year in 6 hours
+# 3 - one year in 12 hours
+# 3 - one year in a day
+# 3 - one year in a week
+# 3 - one year in a month
+# 3 - one year in a year
+
 cellsize = 16 + 16 * cellscale
 camera = [0, 0]
 hairm = ('graphics/hairshort.png', 'graphics/hairmiddle.png', \
@@ -147,7 +163,7 @@ class Human(pygame.sprite.Sprite):
         self.imageflip = pygame.transform.flip(self.image, True, False)
 
     def update(self, events=0, dt=clock.tick(FPS), x=0, y=0):
-        self.age = self.detage + (pygame.time.get_ticks() - self.birth)/(1000)
+        self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
         self.build_sprite()
         move = pygame.Vector2((0, 0))
         move += (x, y)
@@ -323,7 +339,8 @@ class Player(Human):
         self.player = True
 
     def update(self, events, dt):
-        self.age = self.detage + (pygame.time.get_ticks() - self.birth)/(1000)
+        self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
+        print(self.age)
         self.build_sprite()
         global camera
         pressed = pygame.key.get_pressed()
@@ -391,13 +408,13 @@ player = Player((width/2, height/2), x_coord, y_coord, np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
-                            np.random.random(), age=40)
+                            np.random.random(), age=19)
 beast_coords = []
 beasts = []
 sprites = []
 beast_coords.append((x_coord, y_coord))
 beasts.append(player)
-while len(beast_coords) < 20:
+while len(beast_coords) < 4:
     x_coord = np.random.randint(1, int(width/cellsize)) * cellsize
     y_coord = np.random.randint(1, int(height/cellsize)) * cellsize
     if (x_coord, y_coord) not in beast_coords:
@@ -406,7 +423,7 @@ while len(beast_coords) < 20:
                             np.random.random(), np.random.random(), \
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
-                            np.random.random(), age=40))
+                            np.random.random(), age=19))
 
 
 chunk = np.array([np.ones((50, 50), dtype=int), \
