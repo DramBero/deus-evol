@@ -16,8 +16,8 @@ hairf = ('graphics/hairlong.png', 'graphics/hairmiddlebig.png', \
 haira = ('graphics/hairafro.png', 'graphics/hairshortest.png')
 hairb = ['graphics/hairback.png']
 hairunique = ('graphics/hairbald.png')
-clothesm = ['graphics/bikinim.png']
-clothesf = ['graphics/bikinif.png']
+clothesm = [0, 'graphics/bikinim.png']
+clothesf = [0, 'graphics/bikinif.png']
 
 def tile_prepare(image, color=0, scale=(cellsize, cellsize), flip=False):
     tile = pygame.image.load(image)
@@ -45,66 +45,94 @@ def truncated_normal(mean, stddev, minval, maxval):
 
 class Human(pygame.sprite.Sprite):
     def __init__(self, pos, x, y, gmelanine, gskincrange, gskinbalance, \
-                 female, gmuscularity, gspeed, ghairred, ghairlength):
+                 female, gmuscularity, gspeed, ghairred, ghairlength, age=0):
         pygame.sprite.Sprite.__init__(self)
+        self.birth = pygame.time.get_ticks()
+        self.detage = age
+        self.age = age
+        self.ghairlength = ghairlength
+        self.gskincrange = gskincrange
+        self.gskinbalance = gskinbalance
+        self.ghairred = ghairred
         self.pos = pygame.Vector2(pos)
         self.player = False
         self.married = False
         self.dead = False
+        self.clotheschanged = True
+        self.colorchanged = True
         self.female = female
-        self.gmuscularity = gmuscularity
+        self.melanine = gmelanine
         self.gspeed = gspeed
         self.muscularity = gmuscularity - (female * 0.3 * gmuscularity) 
+        self.width = 0
+        self.clothes = [0, 0, 0, 0, 0, 0, 0]
+        # [underwear, shirt, coat, legs, arms, hat, mask]
+        self.attract = self.melanine
+        self.speed = gspeed - (female * 0.2 * gspeed) - (gmelanine * 0.1 * gspeed)
+        if self.female:
+            self.bodynude = pygame.image.load('graphics/bodyf.png')
+        else:
+            self.bodynude = pygame.image.load('graphics/bodym.png')
+        self.body = self.bodynude.copy()
+        if self.melanine < 0.3:
+            self.hairstyle = haira[np.random.randint(0, len(haira))]
+        else:
+            if self.female:
+                self.hairstyle = hairf[np.random.randint(0, len(hairf))]
+            else:
+                self.hairstyle = hairm[np.random.randint(0, len(hairm))]
+        self.build_sprite()
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.speedx = 0
+        self.speedy = 0
+
+    def build_sprite(self):
         self.image = pygame.Surface((16, 17))
         self.image = pygame.image.load('graphics/head.png')
         self.image.blit(self.image, (0, 0))
         self.image = pygame.transform.scale(self.image, (cellsize, cellsize))
-        self.width = 0
-        self.hairlength = ghairlength * gmelanine
-        self.hairgreyness = 0
+        self.hairlength = self.ghairlength * self.melanine
+        self.greyhair()
         self.hairback = 0
-        self.gmelanine = gmelanine
-        self.gskincrange = gskincrange
-        self.gskinbalance = gskinbalance
-        self.ghairlight = self.gmelanine * self.gskincrange
-        self.ghairred = ghairred
+        self.ghairlight = self.melanine * self.gskincrange
         hred, hgreen, hblue = 30, 30, 30
         hred += int(self.ghairlight * 225)
         hgreen += int(((hred - 30)/2) + ((hred - 30)/2) * (1 - self.ghairred))
         if hred > 210 and self.ghairred > 0.5:
             self.frek = tile_prepare('graphics/freckles.png', (hred, hgreen, hblue))
-            self.frek.set_alpha(255 * (ghairred - 0.5) * 2)
+            self.frek.set_alpha(255 * (self.ghairred - 0.5) * 2)
             self.image.blit(self.frek, (0, 0))
         hredgrey = (255 - hred) * ((self.hairgreyness - 0.5) * 2)
         hred = int((abs(hredgrey) + hredgrey)/2 + hred)
         hgreen = int(hgreen + ((hred - hgreen) * self.hairgreyness))
         hblue = int(hblue + ((hred - hblue) * self.hairgreyness))
-        if not self.female:
-            self.body = pygame.image.load('graphics/bodym.png')
-            self.width = int((1 - self.muscularity) * 0.3 * cellsize)
-            self.body = pygame.transform.scale(self.body, (cellsize - self.width, cellsize))
-            if self.gmelanine > 0.3:
-                self.hair = pygame.image.load(hairm[np.random.randint(0, len(hairm))])
-            else:
-                self.hair = pygame.image.load(haira[np.random.randint(0, len(haira))])
-        else:
-            self.body = pygame.image.load('graphics/bodyf.png')
-            self.body = pygame.transform.scale(self.body, (cellsize, cellsize))
-            backlength = int(self.hairlength * (cellsize * (10/16)))
-            self.hairback = tile_prepare(hairb[0], (hred, hgreen, hblue), scale=(int(cellsize * (9/16)), backlength))
-            if self.gmelanine > 0.3:
-                self.hair = pygame.image.load(hairf[np.random.randint(0, len(hairf))])
-            else:
-                self.hair = pygame.image.load(haira[np.random.randint(0, len(haira))])
-        self.hair = pygame.transform.scale(self.hair, (cellsize, cellsize))
-        self.image.blit(self.body, (self.width/2, 0))
-        self.colorImage = pygame.Surface(self.image.get_size()).convert_alpha()
-        red = 30 + int(225 * self.gmelanine)
+        red = 30 + int(225 * self.melanine)
         blue = int(red * 0.6 * self.gskincrange)
         green = int(blue + (0.4 * (red - blue)) + (0.4 * (red - blue)) * \
                     (1 - self.gskinbalance))
-        self.colorImage.fill((red, green, blue))
-        self.image.blit(self.colorImage, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
+        self.colorimage = pygame.Surface(self.image.get_size()).convert_alpha()
+        self.colorimage.fill((red, green, blue))
+        self.image.blit(self.colorimage, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
+        if self.colorchanged:
+            self.colorbody = pygame.Surface(self.body.get_size()).convert_alpha()
+            self.colorbody.fill((red, green, blue))
+            self.body.blit(self.colorbody, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
+            self.colorchanged = False
+        if self.clotheschanged:
+            self.body_wear()
+            self.clotheschanged = False
+        if not self.female:
+            self.width = int((1 - self.muscularity) * 0.3 * cellsize)
+            self.body = pygame.transform.scale(self.body, (cellsize - self.width, cellsize))
+        else:
+            self.body = pygame.transform.scale(self.body, (cellsize, cellsize))
+            backlength = int(self.hairlength * (cellsize * (10/16)))
+            self.hairback = tile_prepare(hairb[0], (hred, hgreen, hblue), scale=(int(cellsize * (9/16)), backlength))
+        self.image.blit(self.body, (self.width/2, 0))
+        self.hair = pygame.image.load(self.hairstyle)
+        self.hair = pygame.transform.scale(self.hair, (cellsize, cellsize))
         self.bodylayer = self.image.copy()
         self.shadow = tile_prepare('graphics/shadow.png')
         self.image.blit(self.shadow, (0, 0))
@@ -117,15 +145,10 @@ class Human(pygame.sprite.Sprite):
         self.image.blit(self.hair, (0, 0))
         self.imageunflip = self.image
         self.imageflip = pygame.transform.flip(self.image, True, False)
-        self.attract = self.gmelanine
-        self.speed = gspeed - (female * 0.2 * gspeed) - (gmelanine * 0.1 * gspeed)
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        self.speedx = 0
-        self.speedy = 0
 
     def update(self, events=0, dt=clock.tick(FPS), x=0, y=0):
+        self.age = self.detage + (pygame.time.get_ticks() - self.birth)/(1000)
+        self.build_sprite()
         move = pygame.Vector2((0, 0))
         move += (x, y)
         if move.length() > 0: move.normalize_ip()
@@ -210,16 +233,14 @@ class Human(pygame.sprite.Sprite):
                         beast.die()
 
     def marry(self, beast):
+        if self.age < 18:
+            pass
         self.married = True
         beast.married = True
-        if self.female:
-            self.body_wear(clothesf[0], (120, 190, 0))
-        else:
-            self.body_wear(clothesm[0], (120, 190, 0))
-        if beast.female:
-            beast.body_wear(clothesf[0], (120, 190, 0))
-        else:
-            beast.body_wear(clothesm[0], (120, 190, 0))
+        self.clothes[0] = [1, (120, 190, 0)]
+        self.clotheschanged = True
+        beast.clothes[0] = [1, (120, 190, 0)]
+        beast.clotheschanged = True
         chance = np.random.random()
         if self.female and not beast.female:
             self.givebirth(beast)
@@ -243,17 +264,19 @@ class Human(pygame.sprite.Sprite):
                 beast.givebirth(self, 5)
             
     def givebirth(self, beast, lower=1):
+        if self.age < 13:
+            pass
         x = self.pos[0]
         y = self.pos[1] + cellsize * lower
         gmelanine = truncated_normal(\
-            (self.gmelanine + beast.gmelanine)/2, 0.05, 0.001, 0.999)
+            (self.melanine + beast.melanine)/2, 0.05, 0.001, 0.999)
         gskincrange = truncated_normal(\
             (self.gskincrange + beast.gskincrange)/2, 0.05, 0.001, 0.999)
         gskinbalance = truncated_normal(\
             (self.gskinbalance + beast.gskinbalance)/2, 0.05, 0.001, 0.999)
         female = np.random.choice((0, 1))
         gmuscularity = truncated_normal(\
-            (self.gmuscularity + beast.gmuscularity)/2, 0.05, 0.001, 0.999)
+            (self.muscularity + beast.muscularity)/2, 0.05, 0.001, 0.999)
         gspeed = truncated_normal(\
             (self.gspeed + beast.gspeed)/2, 0.05, 0.001, 0.999)
         ghairred = truncated_normal(\
@@ -263,7 +286,6 @@ class Human(pygame.sprite.Sprite):
                             gskinbalance, female, gmuscularity, gspeed, \
                             ghairred, ghairlength)
         beasts.append(child)
-        all_sprites.add(child)
         
     def die(self):
         beasts.remove(self)
@@ -272,26 +294,37 @@ class Human(pygame.sprite.Sprite):
         self.colorImage.fill((255, 255, 255))
         self.image.blit(self.colorImage, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
 
-    def body_wear(self, cloth, color):
-        self.image = self.imageunflip
-        self.cloth = pygame.image.load(cloth)
-        self.cloth = pygame.transform.scale(self.cloth, (cellsize - self.width, cellsize))
-        self.colorcloth = pygame.Surface(self.hair.get_size()).convert_alpha()
-        self.colorcloth.fill((color))
-        self.cloth.blit(self.colorcloth, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
-        self.image.blit(self.cloth, (self.width/2, 0))
-        self.imageunflip = self.image
-        self.imageflip = pygame.transform.flip(self.image, True, False)
+    def body_wear(self):
+        for cloth in self.clothes:
+            if cloth:                
+                if self.female:
+                    self.cloth = pygame.image.load(clothesf[cloth[0]])
+                    self.cloth = pygame.transform.scale(self.cloth, (cellsize, cellsize))
+                else:
+                    self.cloth = pygame.image.load(clothesm[cloth[0]])
+                    self.width = int((1 - self.muscularity) * 0.3 * cellsize)
+                    self.cloth = pygame.transform.scale(self.cloth, (cellsize - self.width, cellsize))
+                self.colorcloth = pygame.Surface(self.hair.get_size()).convert_alpha()
+                self.colorcloth.fill(cloth[1])
+                self.cloth.blit(self.colorcloth, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
+                self.body.blit(self.cloth, (0, 0))
+        
+    def greyhair(self):
+        greyformula = 40 - (abs(self.age - 40) + (self.age - 40))/2
+        greyformula = 1 - ((abs(greyformula) + greyformula)/2)/40
+        self.hairgreyness = greyformula
 
 
 class Player(Human):
     def __init__(self, pos, x, y, gmelanine, gskincrange, gskinbalance, \
-                 female, gmuscularity, gspeed, ghairred, ghairlength):
+                 female, gmuscularity, gspeed, ghairred, ghairlength, age):
         Human.__init__(self, pos, x, y, gmelanine, gskincrange, gskinbalance, \
-                 female, gmuscularity, gspeed, ghairred, ghairlength)
+                 female, gmuscularity, gspeed, ghairred, ghairlength, age)
         self.player = True
 
     def update(self, events, dt):
+        self.age = self.detage + (pygame.time.get_ticks() - self.birth)/(1000)
+        self.build_sprite()
         global camera
         pressed = pygame.key.get_pressed()
         move = pygame.Vector2((0, 0))
@@ -310,12 +343,9 @@ class Player(Human):
             for i in beasts:
                 if (abs(i.pos[0] - self.pos[0]) < (cellsize/16 * 5)) and \
                 (abs(i.pos[1] - self.pos[1]) < (cellsize/16 * 5)) and not \
-                i.player and not i.married:
+                i.player:
                     closest.append(i)
             if len(closest) == 1:
-                print(closest)
-                print(self.pos[0], self.pos[1])
-                print(closest[0].pos[0], closest[0].pos[1])
                 self.marry(closest[0])
         if move.length() > 0: move.normalize_ip()
         if self.rect.left < 2 * cellsize/16:
@@ -361,13 +391,13 @@ player = Player((width/2, height/2), x_coord, y_coord, np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
-                            np.random.random())
+                            np.random.random(), age=40)
 beast_coords = []
 beasts = []
 sprites = []
 beast_coords.append((x_coord, y_coord))
 beasts.append(player)
-while len(beast_coords) < 30:
+while len(beast_coords) < 20:
     x_coord = np.random.randint(1, int(width/cellsize)) * cellsize
     y_coord = np.random.randint(1, int(height/cellsize)) * cellsize
     if (x_coord, y_coord) not in beast_coords:
@@ -376,7 +406,7 @@ while len(beast_coords) < 30:
                             np.random.random(), np.random.random(), \
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
-                            np.random.random()))
+                            np.random.random(), age=40))
 
 
 chunk = np.array([np.ones((50, 50), dtype=int), \
@@ -386,12 +416,12 @@ chunk = np.array([np.ones((50, 50), dtype=int), \
 def setup_background():
     global end_coords
     screen.fill((0, 0, 0))
-    plain = tile_prepare('graphics/grass.png', (150, 180, 50))
+    plain = tile_prepare('graphics/grass.png', (110, 190, 60))
     plains = [0, plain]
-    plant1 = tile_prepare('graphics/plants1.png', (150, 200, 50))
-    plant1f = tile_prepare('graphics/plants1.png', (150, 200, 50), flip=True)
-    plant2 = tile_prepare('graphics/plants2.png', (150, 200, 50))
-    plant2f = tile_prepare('graphics/plants2.png', (150, 200, 50), flip=True)
+    plant1 = tile_prepare('graphics/plants1.png', (150, 200, 80))
+    plant1f = tile_prepare('graphics/plants1.png', (150, 200, 80), flip=True)
+    plant2 = tile_prepare('graphics/plants2.png', (150, 200, 80))
+    plant2f = tile_prepare('graphics/plants2.png', (150, 200, 80), flip=True)
     decs = [0, 0, 0, 0, 0, 0, plant1, plant1f, plant2, plant2f]
     tile_width, tile_height = plain.get_width(), plain.get_height()
     for x,y in product(range(0,tile_width * len(chunk[0][0]), tile_width),
@@ -420,14 +450,3 @@ while running:
         i.sex_behave()
     
 pygame.quit()
-
-
-'''
-        self.speedx = x
-        if self.speedx < 0:
-            self.image = self.imageflip    
-        else:
-            self.image = self.imageunflip
-        self.speedy = y
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy'''
