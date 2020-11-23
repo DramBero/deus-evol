@@ -1,0 +1,23 @@
+Sprite layers:
+1. Shadow
+2. Hairback
+3. Body
+4. Cloth
+5. Legs
+6. Arm
+7. Head
+8. Hair
+9. Hat
+
+
+Landscape layers:
+1. Ground
+	Soil
+	Sand
+	Stone
+	Brick
+2. Grass
+3. Foliage
+4. Snow
+	Snow with tracks
+5. Random plants

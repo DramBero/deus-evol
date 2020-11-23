@@ -8,7 +8,7 @@ height = 480
 FPS = 60
 cellscale = 3
 ts_scale = [1/60, 1, 60, 60*2, 60*4, 60*6, 60*12, 60*24, 60*24*7, 60*24*30, 60*24*365]
-ts_index = 1
+ts_index = 0
 time_speed = 1000*60*ts_scale[ts_index]
 
 # 0 - one year in a second, 
