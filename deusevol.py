@@ -2,13 +2,14 @@ import pygame
 from itertools import product
 import math
 import numpy as np
+import time
 
 width = 740
 height = 480
 FPS = 60
 cellscale = 3
 ts_scale = [1/60, 1, 60, 60*2, 60*4, 60*6, 60*12, 60*24, 60*24*7, 60*24*30, 60*24*365]
-ts_index = 0
+ts_index = 1
 time_speed = 1000*60*ts_scale[ts_index]
 
 # 0 - one year in a second, 
@@ -79,6 +80,7 @@ class Human(pygame.sprite.Sprite):
         self.female = female
         self.melanine = gmelanine
         self.gspeed = gspeed
+        self.flipsprite = False
         self.muscularity = gmuscularity - (female * 0.3 * gmuscularity) 
         self.width = 0
         self.clothes = [0, 0, 0, 0, 0, 0, 0]
@@ -161,10 +163,14 @@ class Human(pygame.sprite.Sprite):
         self.image.blit(self.hair, (0, 0))
         self.imageunflip = self.image
         self.imageflip = pygame.transform.flip(self.image, True, False)
+        if self.flipsprite == True:
+            self.image = self.imageflip
 
     def update(self, events=0, dt=clock.tick(FPS), x=0, y=0):
         self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
-        self.build_sprite()
+        if self.rect.right in range(int(camera[0]), int(camera[0]) + width + cellsize) and \
+        self.rect.bottom in range(int(camera[1]), int(camera[1]) + height + cellsize):
+            self.build_sprite()
         move = pygame.Vector2((0, 0))
         move += (x, y)
         if move.length() > 0: move.normalize_ip()
@@ -348,19 +354,19 @@ class Player(Human):
         if pressed[pygame.K_w]: 
             move += (0, -1)
         if pressed[pygame.K_a]: 
-            self.image = self.imageflip 
+            self.flipsprite = True
             move += (-1, 0)
         if pressed[pygame.K_s]: 
             move += (0, 1)
         if pressed[pygame.K_d]: 
-            self.image = self.imageunflip 
+            self.flipsprite = False 
             move += (1, 0)
         if pressed[pygame.K_SPACE]:
             closest = []
             for i in beasts:
                 if (abs(i.pos[0] - self.pos[0]) < (cellsize/16 * 5)) and \
                 (abs(i.pos[1] - self.pos[1]) < (cellsize/16 * 5)) and not \
-                i.player:
+                i.player and not i.married:
                     closest.append(i)
             if len(closest) == 1:
                 self.marry(closest[0])
@@ -401,35 +407,6 @@ class YAwareGroup(pygame.sprite.Group):
         self.lostsprites = []
 
 
-all_sprites = pygame.sprite.Group()
-x_coord = np.random.randint(0, int(width/cellsize)) * cellsize
-y_coord = np.random.randint(0, int(height/cellsize)) * cellsize
-player = Player((width/2, height/2), x_coord, y_coord, np.random.random(), \
-                            np.random.random(), np.random.random(), \
-                            np.random.choice((0, 1)), np.random.random(), \
-                            np.random.random(), np.random.random(), \
-                            np.random.random(), age=19)
-beast_coords = []
-beasts = []
-sprites = []
-beast_coords.append((x_coord, y_coord))
-beasts.append(player)
-while len(beast_coords) < 4:
-    x_coord = np.random.randint(1, int(width/cellsize)) * cellsize
-    y_coord = np.random.randint(1, int(height/cellsize)) * cellsize
-    if (x_coord, y_coord) not in beast_coords:
-        beast_coords.append((x_coord, y_coord))
-        beasts.append(Human((x_coord, y_coord), x_coord, y_coord, np.random.random(), \
-                            np.random.random(), np.random.random(), \
-                            np.random.choice((0, 1)), np.random.random(), \
-                            np.random.random(), np.random.random(), \
-                            np.random.random(), age=19))
-
-
-chunk = np.array([np.ones((50, 50), dtype=int), \
-                  np.random.randint(1, 10, size=(50, 50))])
-
-
 def setup_background():
     global end_coords
     screen.fill((0, 0, 0))
@@ -448,6 +425,38 @@ def setup_background():
         if decs[chunk[1][int(x/tile_width)][int(y/tile_height)]] != 0:
             screen.blit(decs[chunk[1][int(x/tile_width)][int(y/tile_height)]], coord)
         end_coords = [x + tile_width, y + tile_height]
+
+
+chunk = np.array([np.ones((30, 30), dtype=int), \
+                  np.random.randint(1, 10, size=(30, 30))])
+    
+setup_background()
+
+
+
+all_sprites = pygame.sprite.Group()
+x_coord = np.random.randint(0, int(end_coords[0]/cellsize)) * cellsize
+y_coord = np.random.randint(0, int(end_coords[1]/cellsize)) * cellsize
+player = Player((end_coords[0]/2, end_coords[1]/2), x_coord, y_coord, np.random.random(), \
+                            np.random.random(), np.random.random(), \
+                            np.random.choice((0, 1)), np.random.random(), \
+                            np.random.random(), np.random.random(), \
+                            np.random.random(), age=19)
+beast_coords = []
+beasts = []
+sprites = []
+beast_coords.append((x_coord, y_coord))
+beasts.append(player)
+while len(beast_coords) < 40:
+    x_coord = np.random.randint(1, int(end_coords[0]/cellsize)) * cellsize
+    y_coord = np.random.randint(1, int(end_coords[1]/cellsize)) * cellsize
+    if (x_coord, y_coord) not in beast_coords:
+        beast_coords.append((x_coord, y_coord))
+        beasts.append(Human((x_coord, y_coord), x_coord, y_coord, np.random.random(), \
+                            np.random.random(), np.random.random(), \
+                            np.random.choice((0, 1)), np.random.random(), \
+                            np.random.random(), np.random.random(), \
+                            np.random.random(), age=19))
             
             
 running = True
