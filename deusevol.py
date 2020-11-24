@@ -2,28 +2,28 @@ import pygame
 from itertools import product
 import math
 import numpy as np
-import time
 
 width = 740
 height = 480
 FPS = 60
 cellscale = 3
-ts_scale = [1/60, 1, 60, 60*2, 60*4, 60*6, 60*12, 60*24, 60*24*7, 60*24*30, 60*24*365]
+ts_scale = [1/60, 1, 60, 60*2, 60*4, 60*6, 60*12, 60*24, 60*24*7, 60*24*30, 60*24*365, 0]
 ts_index = 1
+
+# 0  - one year in a second, (1:31536000)
+# 1  - one year in a minute, (1:525600)
+# 2  - one year in an hour   (1:8760)
+# 3  - one year in 2 hours   (1:4380)
+# 4  - one year in 4 hours   (1:2190)
+# 5  - one year in 6 hours   (1:1460)
+# 6  - one year in 12 hours  (1:730)
+# 7  - one year in a day     (1:365)
+# 8  - one year in a week    (1:52)
+# 9  - one year in a month   (1:12)
+# 10 - one year in a year    (1:1)
+# 11 - frozen                (1:0)
+
 time_speed = 1000*60*ts_scale[ts_index]
-
-# 0 - one year in a second, 
-# 1 - one year in a minute, 
-# 2 - one year in an hour
-# 3 - one year in 2 hours
-# 3 - one year in 4 hours
-# 3 - one year in 6 hours
-# 3 - one year in 12 hours
-# 3 - one year in a day
-# 3 - one year in a week
-# 3 - one year in a month
-# 3 - one year in a year
-
 cellsize = 16 + 16 * cellscale
 camera = [0, 0]
 hairm = ('graphics/hairshort.png', 'graphics/hairmiddle.png', \
@@ -167,7 +167,8 @@ class Human(pygame.sprite.Sprite):
             self.image = self.imageflip
 
     def update(self, events=0, dt=clock.tick(FPS), x=0, y=0):
-        self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
+        if time_speed:
+            self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
         if self.rect.right in range(int(camera[0]), int(camera[0]) + width + cellsize) and \
         self.rect.bottom in range(int(camera[1]), int(camera[1]) + height + cellsize):
             self.build_sprite()
@@ -175,9 +176,9 @@ class Human(pygame.sprite.Sprite):
         move += (x, y)
         if move.length() > 0: move.normalize_ip()
         if x < 0:
-            self.image = self.imageflip
+            self.flipsprite = True
         else:
-            self.image = self.imageunflip 
+            self.flipsprite = False
         if self.rect.left < 2 * cellsize/16:
             move[0] = (abs(move[0]) + move[0])/2
         if self.rect.top < 2 * cellsize/16:
@@ -189,24 +190,16 @@ class Human(pygame.sprite.Sprite):
         self.pos += move*(dt/5)*(cellsize/16)*0.3
         self.rect.center = self.pos
             
-    def move_towards_player(self, beasty):
+    def move_to_away(self, beasty, away = False):
         dx, dy = beasty.rect.x - self.rect.x, beasty.rect.y - self.rect.y
         dist = math.hypot(dx, dy)
-        if dist:
-            dx, dy = dx/dist, dy/dist
-        else:
+        if not dist:
             pass
-        self.update(x=dx, y=dy)
-
-    def move_awayfrom(self, beasty):
-        dx, dy = beasty.rect.x - self.rect.x, beasty.rect.y - self.rect.y
-        dist = math.hypot(dx, dy)
-        if dist:
-            dx, dy = dx/dist, dy/dist
+        dx, dy = dx/dist, dy/dist
+        if away:
+            self.update(x = -1 * dx, y = -1 * dy)
         else:
-#           self.rect.x += dx * (1 + self.speed) + 5
-            pass
-        self.update(x = -1 * dx, y = -1 * dy)
+            self.update(x = dx, y = dy)
             
     def sex_behave(self):
         if not self.female and not self.married and not self.player:
@@ -222,7 +215,7 @@ class Human(pygame.sprite.Sprite):
             if prefered:
                 if abs(self.pos[0] - prefered[0].pos[0]) > cellsize * (1/16) + 2 or \
                 abs(self.pos[1] - prefered[0].pos[1]) > cellsize * (1/16) + 2:
-                    self.move_towards_player(prefered[0])
+                    self.move_to_away(prefered[0])
                 else:
                     if not prefered[0].player:
                         prefered[0].marry(self)
@@ -249,7 +242,7 @@ class Human(pygame.sprite.Sprite):
             for beast in victim:
                 if abs(self.rect.x - beast.rect.x) < 20 and \
                     abs(self.rect.y - beast.rect.y) < 20:
-                        self.move_towards_player(beast)
+                        self.move_to_away(beast)
                 if abs(self.rect.x - beast.rect.x) == 1 and \
                     abs(self.rect.y - beast.rect.y) == 1:
                         beast.die()
@@ -345,7 +338,8 @@ class Player(Human):
         self.player = True
 
     def update(self, events, dt):
-        self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
+        if time_speed:
+            self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
         print(self.age)
         self.build_sprite()
         global camera

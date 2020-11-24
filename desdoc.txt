@@ -21,3 +21,140 @@ Landscape layers:
 4. Snow
 	Snow with tracks
 5. Random plants
+
+
+
+
+Modules:
+	1. Top-down RPG module (In process)
+	   Loads a chunk map with an npc database. Main ingame interaction
+	   To do:
+	   	- walking animations
+	   	- collisions
+	   	- class info to database
+	   	- optimized sprite building
+	   	- more genetical features
+	   	- character death
+	   	- character fighting
+	   	- character psyche
+	2. Dialogue module
+	   Interaction with the characters.
+	3. Travel module
+	   Pseudo 3D/Parallax graphics on traveling by car/train
+	?. Sea module
+	?. Aero module
+	?. City-building module
+	?. Political-strategic module
+	?. War tactical module
+
+
+
+Story:
+
+	Characters:
+		Dmitry Kladov		v
+		Teodoro Bagwell	v
+		Yuki Hitomi		v
+		Varth Dader		v
+		Sanches Dip		v
+		Mad Dip
+		Amir Khabarov		v
+		Matthew Cameron
+		Mark Rein
+		Ariana York
+		Domenick Gutierrez
+		Petr Stepanov
+		Yaroslav Novikov
+		Vitaly Ilyichev
+		Vitaly Lebedev
+		Samir Babayev
+		Vadim Zhukov
+		Olya Hartmann
+		Red Zerg
+		Javier Lennox
+		Johan Lennox
+		Baters Nise
+		Saimon Anderson
+		Snake Aes
+		Prelov
+		Klimko
+		Ilyin
+		Ogienko
+		Ostap
+		Shpakov
+		Ilyin x2
+		Anisimov
+		Laskin
+		Daniele Stradivari
+		Aleksey Stan
+		Beata Rein
+		Sem Kavabanga
+		Zhemchuzhin
+		
+		
+		
+		
+
+
+
+
+
+Database with time writing
+
+Player ID
+First Name
+Last Name
+World pos x
+World pos y
+Local pos x
+Local pos y
+Genome (skin color, hair color, freckles, grey hair age, eye color, identificator, psychopaties)
+
+
+
+
+Player psyche:
+	Determined features
+	Social features
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
