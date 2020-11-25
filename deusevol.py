@@ -8,7 +8,7 @@ height = 480
 FPS = 60
 cellscale = 3
 ts_scale = [1/60, 1, 60, 60*2, 60*4, 60*6, 60*12, 60*24, 60*24*7, 60*24*30, 60*24*365, 0]
-ts_index = 1
+ts_index = 3
 
 # 0  - one year in a second, (1:31536000)
 # 1  - one year in a minute, (1:525600)
@@ -23,8 +23,16 @@ ts_index = 1
 # 10 - one year in a year    (1:1)
 # 11 - frozen                (1:0)
 
+preshader = [1, 1, 1]
+shader = [1, 1, 1]
+tilesize = 16
+cur_year = 0
+cur_day = 0
+cur_hour = 0
+cur_minute = 0
+cur_tot_min = 0
 time_speed = 1000*60*ts_scale[ts_index]
-cellsize = 16 + 16 * cellscale
+cellsize = tilesize + tilesize * cellscale
 camera = [0, 0]
 hairm = ('graphics/hairshort.png', 'graphics/hairmiddle.png', \
          'graphics/hairmohawk.png')
@@ -36,14 +44,21 @@ hairunique = ('graphics/hairbald.png')
 clothesm = [0, 'graphics/bikinim.png']
 clothesf = [0, 'graphics/bikinif.png']
 
-def tile_prepare(image, color=0, scale=(cellsize, cellsize), flip=False):
+def tile_prepare(image, color=0, scale=(cellsize, cellsize), flip=False, \
+                 shadert=0):
     tile = pygame.image.load(image)
     if flip:
         tile = pygame.transform.flip(tile, True, False)
     tile = pygame.transform.scale(tile, scale)
     if color:
+        colort = [color[0], color[1], color[2]]
+        if not shadert:
+            shadert = shader
+        colort[0] = colort[0] * shadert[0]
+        colort[1] = colort[1] * shadert[1]
+        colort[2] = colort[2] * shadert[2]
         colortile = pygame.Surface(tile.get_size()).convert_alpha()
-        colortile.fill(color)
+        colortile.fill(colort)
         tile.blit(colortile, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
     else:
         tile.blit(tile, (0,0))
@@ -51,6 +66,8 @@ def tile_prepare(image, color=0, scale=(cellsize, cellsize), flip=False):
 
 pygame.init()
 pygame.mixer.init()
+pygame.font.init()
+myfont = pygame.font.SysFont('Arial', 18)
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption('Deus Evolution')
 clock = pygame.time.Clock()
@@ -107,7 +124,7 @@ class Human(pygame.sprite.Sprite):
         self.speedy = 0
 
     def build_sprite(self):
-        self.image = pygame.Surface((16, 17))
+        self.image = pygame.Surface((tilesize, tilesize + (1/tilesize)))
         self.image = pygame.image.load('graphics/head.png')
         self.image.blit(self.image, (0, 0))
         self.image = pygame.transform.scale(self.image, (cellsize, cellsize))
@@ -119,17 +136,19 @@ class Human(pygame.sprite.Sprite):
         hred += int(self.ghairlight * 225)
         hgreen += int(((hred - 30)/2) + ((hred - 30)/2) * (1 - self.ghairred))
         if hred > 210 and self.ghairred > 0.5:
-            self.frek = tile_prepare('graphics/freckles.png', (hred, hgreen, hblue))
+            self.frek = tile_prepare('graphics/freckles.png', \
+                                     (int(hred), int(hgreen), \
+                                      int(hblue)))
             self.frek.set_alpha(255 * (self.ghairred - 0.5) * 2)
             self.image.blit(self.frek, (0, 0))
         hredgrey = (255 - hred) * ((self.hairgreyness - 0.5) * 2)
-        hred = int((abs(hredgrey) + hredgrey)/2 + hred)
-        hgreen = int(hgreen + ((hred - hgreen) * self.hairgreyness))
-        hblue = int(hblue + ((hred - hblue) * self.hairgreyness))
-        red = 30 + int(225 * self.melanine)
+        hred = int(((abs(hredgrey) + hredgrey)/2 + hred))
+        hgreen = int((hgreen + ((hred - hgreen) * self.hairgreyness)))
+        hblue = int((hblue + ((hred - hblue) * self.hairgreyness)))
+        red = int((30 + int(225 * self.melanine)))
         blue = int(red * 0.6 * self.gskincrange)
-        green = int(blue + (0.4 * (red - blue)) + (0.4 * (red - blue)) * \
-                    (1 - self.gskinbalance))
+        green = int((blue + (0.4 * (red - blue)) + (0.4 * (red - blue)) * \
+                    (1 - self.gskinbalance)))
         self.colorimage = pygame.Surface(self.image.get_size()).convert_alpha()
         self.colorimage.fill((red, green, blue))
         self.image.blit(self.colorimage, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
@@ -165,6 +184,12 @@ class Human(pygame.sprite.Sprite):
         self.imageflip = pygame.transform.flip(self.image, True, False)
         if self.flipsprite == True:
             self.image = self.imageflip
+        sred = int(255 * shader[0])
+        sgreen = int(255 * shader[1])
+        sblue = int(255 * shader[2])
+        self.colorshade = pygame.Surface(self.hair.get_size()).convert_alpha()
+        self.colorshade.fill((sred, sgreen, sblue))
+        self.image.blit(self.colorshade, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
 
     def update(self, events=0, dt=clock.tick(FPS), x=0, y=0):
         if time_speed:
@@ -340,7 +365,6 @@ class Player(Human):
     def update(self, events, dt):
         if time_speed:
             self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
-        print(self.age)
         self.build_sprite()
         global camera
         pressed = pygame.key.get_pressed()
@@ -419,11 +443,62 @@ def setup_background():
         if decs[chunk[1][int(x/tile_width)][int(y/tile_height)]] != 0:
             screen.blit(decs[chunk[1][int(x/tile_width)][int(y/tile_height)]], coord)
         end_coords = [x + tile_width, y + tile_height]
+    text = 'Year: ' + str(int(cur_year)) + ', Day: ' + str(int(cur_day)) + \
+    ', Time: ' + str(int(cur_hour)) + ':' + str(int(cur_minute))
+    textsurface = myfont.render(text , False, (200, 200, 0))
+    screen.blit(textsurface,(10,10))
 
+
+def time_cycle():
+    global cur_year
+    global cur_day
+    global cur_hour
+    global cur_minute
+    global cur_tot_min
+    cur_year = int(pygame.time.get_ticks()/time_speed)
+    cur_day = (pygame.time.get_ticks()/time_speed - cur_year) * 365
+    cur_hour = (cur_day - math.floor(cur_day)) * 24
+    cur_minute = (cur_hour - math.floor(cur_hour)) * 60
+    cur_tot_min = (cur_day - math.floor(cur_day))
+
+
+def day_night_cycle():
+    global shader
+#    first_stage = 5:00 - 9:00 7/24
+#    second_stage = 20:00 - 22:00 4/24
+#    red_stage = (1, 0.5, 0) 18:00 - 22:00
+    if cur_tot_min > 9/24 and cur_tot_min < 20/24:
+        darkness = 0
+    elif cur_tot_min > 5/24 and cur_tot_min < 9/24:
+        darkness = (1 - (cur_tot_min - 5/24) * 8) * 0.75
+    elif cur_tot_min > 20/24 and cur_tot_min < 22/24:
+        darkness = (cur_tot_min - 20/24) * 12 * 0.75
+    else:
+        darkness = 0.75
+    if darkness < 0:
+        darkness = 0
+    elif darkness > 1:
+        darkness = 1
+    if cur_tot_min < 18/24 or cur_tot_min > 22/24:
+        redness = 0
+    else:
+        redness = 1 - abs(1 - (cur_tot_min - 18/24) * 12)
+    if redness < 0:
+        redness = 0
+    elif redness > 1:
+        redness = 1
+    night_shader = [1 - darkness, 1 - darkness, 1]
+    sunset_shader = [1, 1 - (0.5 * redness), 1 - redness]
+    shader = [a * b * c for a, b, c in zip(preshader, night_shader, sunset_shader)]
+    print('shader = ', shader)
+
+
+time_cycle()
+day_night_cycle()
 
 chunk = np.array([np.ones((30, 30), dtype=int), \
                   np.random.randint(1, 10, size=(30, 30))])
-    
+
 setup_background()
 
 
@@ -451,10 +526,11 @@ while len(beast_coords) < 40:
                             np.random.choice((0, 1)), np.random.random(), \
                             np.random.random(), np.random.random(), \
                             np.random.random(), age=19))
-            
-            
+                       
 running = True
 while running:
+    time_cycle()
+    day_night_cycle()
     sprites = YAwareGroup(beasts)
     events = pygame.event.get()
     for e in events:
