@@ -8,7 +8,7 @@ height = 480
 FPS = 60
 cellscale = 3
 ts_scale = [1/60, 1, 60, 60*2, 60*4, 60*6, 60*12, 60*24, 60*24*7, 60*24*30, 60*24*365, 0]
-ts_index = 3
+ts_index = 1
 
 # 0  - one year in a second, (1:31536000)
 # 1  - one year in a minute, (1:525600)
@@ -28,9 +28,11 @@ shader = [1, 1, 1]
 tilesize = 16
 cur_year = 0
 cur_day = 0
+cur_date = 0
 cur_hour = 0
 cur_minute = 0
 cur_tot_min = 0
+cur_month = ''
 time_speed = 1000*60*ts_scale[ts_index]
 cellsize = tilesize + tilesize * cellscale
 camera = [0, 0]
@@ -43,6 +45,10 @@ hairb = ['graphics/hairback.png']
 hairunique = ('graphics/hairbald.png')
 clothesm = [0, 'graphics/bikinim.png']
 clothesf = [0, 'graphics/bikinif.png']
+
+months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', \
+          'August', 'September', 'October', 'November', 'December']
+
 
 def tile_prepare(image, color=0, scale=(cellsize, cellsize), flip=False, \
                  shadert=0):
@@ -67,7 +73,7 @@ def tile_prepare(image, color=0, scale=(cellsize, cellsize), flip=False, \
 pygame.init()
 pygame.mixer.init()
 pygame.font.init()
-myfont = pygame.font.SysFont('Arial', 18)
+myfont = pygame.font.SysFont('Arial', 18, bold=True)
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption('Deus Evolution')
 clock = pygame.time.Clock()
@@ -443,20 +449,117 @@ def setup_background():
         if decs[chunk[1][int(x/tile_width)][int(y/tile_height)]] != 0:
             screen.blit(decs[chunk[1][int(x/tile_width)][int(y/tile_height)]], coord)
         end_coords = [x + tile_width, y + tile_height]
-    text = 'Year: ' + str(int(cur_year)) + ', Day: ' + str(int(cur_day)) + \
-    ', Time: ' + str(int(cur_hour)) + ':' + str(int(cur_minute))
-    textsurface = myfont.render(text , False, (200, 200, 0))
-    screen.blit(textsurface,(10,10))
+#    text = 'Year: ' + str(int(cur_year)) + ', Day: ' + str(int(cur_day)) + \
+#    ', Time: ' + str(int(cur_hour)) + ':' + str(int(cur_minute))
+#    textsurface = myfont.render(text , True, (250, 250, 250))
+#    screen.blit(textsurface,(10,10))
 
+
+def text_label():
+    text1 = 'Year: ' + str(int(cur_year))
+    text2 = 'Day: ' + str(int(cur_date)) + ' ' + cur_month
+    text3 = 'Time: ' + str(int(cur_hour)) + ':' + str(int(cur_minute))
+    texts = [text1, text2, text3]
+    for i in range(len(texts)):
+        textsurface = myfont.render(texts[i], True, (250, 250, 250))
+        screen.blit(textsurface,(10,10 + 20 * i))
+
+
+def get_month(cur_day, leap_year):
+    cur_day = int(cur_day)
+    num_month = 0
+    cur_date = 1
+    if cur_day in range(1, 32):
+        num_month = 0
+        cur_date = cur_day
+    if not leap_year:
+        if cur_day in range(32, 60):
+            num_month = 1
+            cur_date = cur_day - 31
+        elif cur_day in range(60, 92):
+            num_month = 2
+            cur_date = cur_day - 59
+        elif cur_day in range(92, 122):
+            num_month = 3
+            cur_date = cur_day - 91
+        elif cur_day in range(122, 153):
+            num_month = 4
+            cur_date = cur_day - 121
+        elif cur_day in range(153, 183):
+            num_month = 5
+            cur_date = cur_day - 152
+        elif cur_day in range(183, 214):
+            num_month = 6
+            cur_date = cur_day - 182
+        elif cur_day in range(214, 245):
+            num_month = 7
+            cur_date = cur_day - 213
+        elif cur_day in range(245, 275):
+            num_month = 8
+            cur_date = cur_day - 244
+        elif cur_day in range(275, 306):
+            num_month = 9
+            cur_date = cur_day - 274
+        elif cur_day in range(306, 336):
+            num_month = 10
+            cur_date = cur_day - 305
+        elif cur_day in range(335, 366):
+            num_month = 11
+            cur_date = cur_day - 334
+    if leap_year:
+        if cur_day in range(32, 61):
+            num_month = 1
+            cur_date = cur_day - 31
+        elif cur_day in range(61, 93):
+            num_month = 2
+            cur_date = cur_day - 60
+        elif cur_day in range(93, 123):
+            num_month = 3
+            cur_date = cur_day - 92
+        elif cur_day in range(123, 154):
+            num_month = 4
+            cur_date = cur_day - 122
+        elif cur_day in range(154, 184):
+            num_month = 5
+            cur_date = cur_day - 153
+        elif cur_day in range(184, 215):
+            num_month = 6
+            cur_date = cur_day - 183
+        elif cur_day in range(215, 246):
+            num_month = 7
+            cur_date = cur_day - 214
+        elif cur_day in range(246, 276):
+            num_month = 8
+            cur_date = cur_day - 245
+        elif cur_day in range(276, 307):
+            num_month = 9
+            cur_date = cur_day - 275
+        elif cur_day in range(307, 337):
+            num_month = 10
+            cur_date = cur_day - 306
+        elif cur_day in range(336, 367):
+            num_month = 11
+            cur_date = cur_day - 335
+    return num_month, cur_date
 
 def time_cycle():
     global cur_year
     global cur_day
     global cur_hour
     global cur_minute
+    global cur_date
+    global cur_month
     global cur_tot_min
-    cur_year = int(pygame.time.get_ticks()/time_speed)
-    cur_day = (pygame.time.get_ticks()/time_speed - cur_year) * 365
+    leap_year = False
+    cur_year = pygame.time.get_ticks()/time_speed 
+    if cur_year/4 - math.floor(cur_year/4) == 0:
+        leap_year = True
+    cur_day = 1 + (pygame.time.get_ticks()/time_speed - math.floor(cur_year)) * 365
+    print(cur_day)
+    num_month, cur_date = get_month(cur_day, leap_year)
+    cur_month = months[num_month]
+    if leap_year:
+        cur_day = cur_day + (cur_day * (1/365))
     cur_hour = (cur_day - math.floor(cur_day)) * 24
     cur_minute = (cur_hour - math.floor(cur_hour)) * 60
     cur_tot_min = (cur_day - math.floor(cur_day))
@@ -464,10 +567,10 @@ def time_cycle():
 
 def day_night_cycle():
     global shader
-#    first_stage = 5:00 - 9:00 7/24
-#    second_stage = 20:00 - 22:00 4/24
-#    red_stage = (1, 0.5, 0) 18:00 - 22:00
-    if cur_tot_min > 9/24 and cur_tot_min < 20/24:
+#    dawn = 5:00 - 9:00
+#    dusk = 20:00 - 22:00
+#    sunset = 18:00 - 22:00
+    if cur_tot_min > 8/24 and cur_tot_min < 20/24:
         darkness = 0
     elif cur_tot_min > 5/24 and cur_tot_min < 9/24:
         darkness = (1 - (cur_tot_min - 5/24) * 8) * 0.75
@@ -487,10 +590,19 @@ def day_night_cycle():
         redness = 0
     elif redness > 1:
         redness = 1
-    night_shader = [1 - darkness, 1 - darkness, 1]
+    if cur_tot_min < 5/24 or cur_tot_min > 11/24:
+        pinkness = 0
+    else:
+        pinkness = 1 - abs(1 - (cur_tot_min - 5/24) * 18)
+    if pinkness < 0:
+        pinkness = 0
+    elif pinkness > 1:
+        pinkness = 1
+    night_shader = [1 - darkness, 1 - darkness, 1 - (0.5 * darkness)]
     sunset_shader = [1, 1 - (0.5 * redness), 1 - redness]
-    shader = [a * b * c for a, b, c in zip(preshader, night_shader, sunset_shader)]
-    print('shader = ', shader)
+    sunrise_shader = [1, 1 - (0.4 * pinkness), 1 - (0.1 * pinkness)]
+    shader = [a * b * c * d for a, b, c, d in zip(preshader, night_shader, \
+                                                  sunset_shader, sunrise_shader)]
 
 
 time_cycle()
@@ -500,6 +612,7 @@ chunk = np.array([np.ones((30, 30), dtype=int), \
                   np.random.randint(1, 10, size=(30, 30))])
 
 setup_background()
+text_label()
 
 
 
@@ -539,6 +652,7 @@ while running:
     sprites.update(events, dt)
     setup_background()
     sprites.draw(screen)
+    text_label()
     dt = clock.tick(FPS)
     pygame.display.flip()
     for i in beasts:
