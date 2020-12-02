@@ -6,9 +6,10 @@ import numpy as np
 width = 740
 height = 480
 FPS = 60
-cellscale = 3
-ts_scale = [1/60, 1, 60, 60*2, 60*4, 60*6, 60*12, 60*24, 60*24*7, 60*24*30, 60*24*365, 0]
-ts_index = 1
+cellscale = 2
+ts_scale = [1/60, 1, 60, 60*2, 60*4, 60*6, 60*12, 60*24, 60*24*7, 60*24*30, \
+            60*24*365, 0]
+ts_index = 4
 
 # 0  - one year in a second, (1:31536000)
 # 1  - one year in a minute, (1:525600)
@@ -25,7 +26,8 @@ ts_index = 1
 
 preshader = [1, 1, 1]
 shader = [1, 1, 1]
-tilesize = 16
+tilesize = 32
+step = 0
 cur_year = 0
 cur_day = 0
 cur_date = 0
@@ -35,16 +37,14 @@ cur_tot_min = 0
 cur_month = ''
 time_speed = 1000*60*ts_scale[ts_index]
 cellsize = tilesize + tilesize * cellscale
-camera = [0, 0]
-hairm = ('graphics/hairshort.png', 'graphics/hairmiddle.png', \
-         'graphics/hairmohawk.png')
-hairf = ('graphics/hairlong.png', 'graphics/hairmiddlebig.png', \
-         'graphics/hairmiddle.png')
-haira = ('graphics/hairafro.png', 'graphics/hairshortest.png')
-hairb = ['graphics/hairback.png']
+cam = [0, 0]
+hairm = ('graphics32/hairm.png')
+hairf = ('graphics32/hairf.png')
+#haira = ('graphics/hairafro.png', 'graphics/hairshortest.png')
+#hairb = ['graphics/hairback.png']
 hairunique = ('graphics/hairbald.png')
-clothesm = [0, 'graphics/bikinim.png']
-clothesf = [0, 'graphics/bikinif.png']
+clothesm = [0, 'graphics32/bikinim.png']
+clothesf = [0, 'graphics32/bikinif.png']
 
 months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', \
           'August', 'September', 'October', 'November', 'December']
@@ -83,10 +83,26 @@ end_coords = [0, 0]
 def truncated_normal(mean, stddev, minval, maxval):
     return np.clip(np.random.normal(mean, stddev), minval, maxval)
 
+
+def create_anim(bodyparts, animframes, rotation=0):
+    frames = []
+    for i in range(len(animframes)):
+        image = bodyparts[0].copy()
+        for j in range(len(bodyparts)):
+            part = bodyparts[j].copy()
+            if rotation:
+                part = pygame.transform.rotate(part, rotation[i][j])
+            image.blit(part, animframes[i][j])
+        frames.append(image)
+    return frames
+
+
 class Human(pygame.sprite.Sprite):
     def __init__(self, pos, x, y, gmelanine, gskincrange, gskinbalance, \
                  female, gmuscularity, gspeed, ghairred, ghairlength, age=0):
         pygame.sprite.Sprite.__init__(self)
+        self.frame = 0
+        self.step = 0
         self.birth = pygame.time.get_ticks()
         self.detage = age
         self.age = age
@@ -110,24 +126,135 @@ class Human(pygame.sprite.Sprite):
         # [underwear, shirt, coat, legs, arms, hat, mask]
         self.attract = self.melanine
         self.speed = gspeed - (female * 0.2 * gspeed) - (gmelanine * 0.1 * gspeed)
+#        if self.melanine < 0.3:
+#            self.hairstyle = haira[np.random.randint(0, len(haira))]
+#        else:
         if self.female:
-            self.bodynude = pygame.image.load('graphics/bodyf.png')
+            self.hairstyle = hairf
+#            self.hairstyle = hairf[np.random.randint(0, len(hairf))]
         else:
-            self.bodynude = pygame.image.load('graphics/bodym.png')
-        self.body = self.bodynude.copy()
-        if self.melanine < 0.3:
-            self.hairstyle = haira[np.random.randint(0, len(haira))]
-        else:
-            if self.female:
-                self.hairstyle = hairf[np.random.randint(0, len(hairf))]
-            else:
-                self.hairstyle = hairm[np.random.randint(0, len(hairm))]
-        self.build_sprite()
+            self.hairstyle = hairm
+#            self.hairstyle = hairm[np.random.randint(0, len(hairm))]
+        self.body_build()
+#        self.build_sprite()
+        self.sprite_gen()
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
         self.speedx = 0
         self.speedy = 0
+        
+    def body_build(self):
+        red = int((30 + int(225 * self.melanine)))
+        blue = int(red * 0.6 * self.gskincrange)
+        green = int((blue + (0.4 * (red - blue)) + (0.4 * (red - blue)) * \
+                    (1 - self.gskinbalance)))
+        if self.female:
+            armback = pygame.image.load('graphics32/farmback.png')
+            legback = pygame.image.load('graphics32/flegback.png')
+            body = pygame.image.load('graphics32/fbody.png')
+            legfront = pygame.image.load('graphics32/flegfront.png') 
+            armfront = pygame.image.load('graphics32/farmfront.png')
+        else:
+            armback = pygame.image.load('graphics32/marmback.png')
+            legback = pygame.image.load('graphics32/mlegback.png')
+            body = pygame.image.load('graphics32/mbody.png')
+            legfront = pygame.image.load('graphics32/mlegfront.png') 
+            armfront = pygame.image.load('graphics32/marmfront.png')
+        armback = pygame.transform.scale(armback, (cellsize, cellsize))
+        legback = pygame.transform.scale(legback, (cellsize, cellsize))
+        body = pygame.transform.scale(body, (cellsize, cellsize))
+        legfront = pygame.transform.scale(legfront, (cellsize, cellsize))
+        armfront = pygame.transform.scale(armfront, (cellsize, cellsize))
+        head = self.image = pygame.image.load('graphics32/head.png')
+        head = pygame.transform.scale(head, (cellsize, cellsize))
+        belly = pygame.image.load('graphics32/belly.png')
+        belly = pygame.transform.scale(belly, (cellsize, cellsize))
+        colorbody = pygame.Surface(armback.get_size()).convert_alpha()
+        colorbody.fill((red, green, blue))
+        for part in [armback, legback, body, legfront, armfront, head, belly]:
+            part.blit(colorbody, (0,0), special_flags = pygame.BLEND_RGBA_MULT)        
+        body.blit(belly, (0, 0))
+        self.greyhair()
+        self.hairback = 0
+        self.ghairlight = self.melanine * self.gskincrange
+        hred, hgreen, hblue = 30, 30, 30
+        hred += int(self.ghairlight * 225)
+        hgreen += int(((hred - 30)/2) + ((hred - 30)/2) * (1 - self.ghairred))
+        hair = pygame.image.load(self.hairstyle)
+        hair = pygame.transform.scale(hair, (cellsize, cellsize))
+        colorhair = pygame.Surface(hair.get_size()).convert_alpha()
+        colorhair.fill((hred, hgreen, hblue))
+        hair.blit(colorhair, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
+        head.blit(hair, (0, 0))
+        bodyparts = [armback, legback, body, legfront, armfront, head]
+        frame1 = [(0, -1), (0, 0), (0, -1), (0, 0), (0, -1), (0, -1)]
+        frame2 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame3 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame4 = [(0, 0), (0, 0), (0, -1), (0, 0), (0, 0), (0, -1)]
+        frames = [frame1, frame2, frame3, frame4]
+        self.idle_anim = create_anim(bodyparts, frames)
+        frame1 = [(0, -1), (0, 0), (0, -1), (0, 0), (0, -1), (0, -1)]
+        frame2 = [(0, 0), (-10, -14), (0, 0), (-24, -14), (0, 0), (0, 0)]
+        frame3 = [(0, 0), (-10, -14), (0, 0), (-24, -14), (0, 0), (0, 0)]
+        frame4 = [(0, 0), (0, 0), (0, -1), (0, 0), (0, 0), (0, -1)]
+        frames = [frame1, frame2, frame3, frame4]
+        rot1 = [0, 0, 0, 0, 0, 0]
+        rot2 = [0, -33, 0, 33, 0, 0]
+        rot3 = [0, -33, 0, 33, 0, 0]
+        rot4 = [0, 0, 0, 0, 0, 0]
+        rots = [rot1, rot2, rot3, rot4]
+        self.run_anim = create_anim(bodyparts, frames, rots)
+
+    def sprite_gen(self):
+        self.body = self.run_anim[self.frame]
+#        self.body = pygame.transform.scale(self.run_anim[self.frame], (cellsize, cellsize))
+        self.image = pygame.Surface((tilesize, tilesize + (1/tilesize)))
+        self.image = pygame.image.load('graphics32/heart.png')
+        self.image.blit(self.image, (0, 0))
+        self.image = pygame.transform.scale(self.image, (cellsize, cellsize))
+    #    if hred > 210 and hairred > 0.5:
+    #        frek = tile_prepare('graphics/freckles.png', \
+    #                                 (int(hred), int(hgreen), \
+    #                                  int(hblue)))
+    #        frek.set_alpha(255 * (hairred - 0.5) * 2)
+    #        image.blit(frek, (0, 0))
+#        hredgrey = (255 - hred) * ((self.hairgreyness - 0.5) * 2)
+#        hred = int(((abs(hredgrey) + hredgrey)/2 + hred))
+#        hgreen = int((hgreen + ((hred - hgreen) * self.hairgreyness)))
+#        hblue = int((hblue + ((hred - hblue) * self.hairgreyness)))
+#        red = int((30 + int(225 * self.melanine)))
+#        blue = int(red * 0.6 * self.gskincrange)
+#        green = int((blue + (0.4 * (red - blue)) + (0.4 * (red - blue)) * \
+#                    (1 - self.gskinbalance)))
+#        colorimage = pygame.Surface(self.image.get_size()).convert_alpha()
+#        colorimage.fill((red, green, blue))
+#        self.image.blit(colorimage, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
+#        if self.colorchanged:
+#            colorbody = pygame.Surface(self.body.get_size()).convert_alpha()
+#            colorbody.fill((red, green, blue))
+#            self.body.blit(colorbody, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
+#            self.colorchanged = False
+#        if self.clotheschanged:
+#            self.body_wear()
+#            self.clotheschanged = False
+        self.image.blit(self.body, (0, 0))
+        bodylayer = self.image.copy()
+        shadow = tile_prepare('graphics32/shadow.png')
+        self.image.blit(shadow, (0, 0))
+#        if hairback:
+#            image.blit(hairback, (cellsize * (4/16), cellsize * (4/16)))
+        self.image.blit(bodylayer, (0, 0))
+#        self.image.blit(hair, (0, 0))
+        imageflip = pygame.transform.flip(self.image, True, False)
+        if self.flipsprite == True:
+            self.image = imageflip
+        sred = int(255 * shader[0])
+        sgreen = int(255 * shader[1])
+        sblue = int(255 * shader[2])
+        colorshade = pygame.Surface(self.image.get_size()).convert_alpha()
+        colorshade.fill((sred, sgreen, sblue))
+        self.image.blit(colorshade, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
 
     def build_sprite(self):
         self.image = pygame.Surface((tilesize, tilesize + (1/tilesize)))
@@ -171,8 +298,8 @@ class Human(pygame.sprite.Sprite):
             self.body = pygame.transform.scale(self.body, (cellsize - self.width, cellsize))
         else:
             self.body = pygame.transform.scale(self.body, (cellsize, cellsize))
-            backlength = int(self.hairlength * (cellsize * (10/16)))
-            self.hairback = tile_prepare(hairb[0], (hred, hgreen, hblue), scale=(int(cellsize * (9/16)), backlength))
+#            backlength = int(self.hairlength * (cellsize * (10/16)))
+#            self.hairback = tile_prepare(hairb[0], (hred, hgreen, hblue), scale=(int(cellsize * (9/16)), backlength))
         self.image.blit(self.body, (self.width/2, 0))
         self.hair = pygame.image.load(self.hairstyle)
         self.hair = pygame.transform.scale(self.hair, (cellsize, cellsize))
@@ -186,7 +313,6 @@ class Human(pygame.sprite.Sprite):
         self.colorhair.fill((hred, hgreen, hblue))
         self.hair.blit(self.colorhair, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
         self.image.blit(self.hair, (0, 0))
-        self.imageunflip = self.image
         self.imageflip = pygame.transform.flip(self.image, True, False)
         if self.flipsprite == True:
             self.image = self.imageflip
@@ -198,14 +324,24 @@ class Human(pygame.sprite.Sprite):
         self.image.blit(self.colorshade, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
 
     def update(self, events=0, dt=clock.tick(FPS), x=0, y=0):
+        global step
         if time_speed:
-            self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
-        if self.rect.right in range(int(camera[0]), int(camera[0]) + width + cellsize) and \
-        self.rect.bottom in range(int(camera[1]), int(camera[1]) + height + cellsize):
-            self.build_sprite()
+            self.age = self.detage + \
+            (pygame.time.get_ticks() - self.birth)/time_speed
+        if self.rect.right in range(int(cam[0]), int(cam[0]) + width + cellsize) and \
+        self.rect.bottom in range(int(cam[1]), int(cam[1]) + height + cellsize):
+            self.sprite_gen()
         move = pygame.Vector2((0, 0))
         move += (x, y)
         if move.length() > 0: move.normalize_ip()
+        time = pygame.time.get_ticks()
+        anim = self.idle_anim
+        if (time - self.step) > 250:
+            if self.frame < (len(anim) - 1):
+                self.frame += 1
+            else:
+                self.frame = 0
+            self.step = time
         if x < 0:
             self.flipsprite = True
         else:
@@ -221,7 +357,7 @@ class Human(pygame.sprite.Sprite):
         self.pos += move*(dt/5)*(cellsize/16)*0.3
         self.rect.center = self.pos
             
-    def move_to_away(self, beasty, away = False):
+    def move_to_away(self, beasty, away=False):
         dx, dy = beasty.rect.x - self.rect.x, beasty.rect.y - self.rect.y
         dist = math.hypot(dx, dy)
         if not dist:
@@ -345,12 +481,10 @@ class Human(pygame.sprite.Sprite):
             if cloth:                
                 if self.female:
                     self.cloth = pygame.image.load(clothesf[cloth[0]])
-                    self.cloth = pygame.transform.scale(self.cloth, (cellsize, cellsize))
                 else:
                     self.cloth = pygame.image.load(clothesm[cloth[0]])
-                    self.width = int((1 - self.muscularity) * 0.3 * cellsize)
-                    self.cloth = pygame.transform.scale(self.cloth, (cellsize - self.width, cellsize))
-                self.colorcloth = pygame.Surface(self.hair.get_size()).convert_alpha()
+                self.cloth = pygame.transform.scale(self.cloth, (cellsize, cellsize))
+                self.colorcloth = pygame.Surface(self.cloth.get_size()).convert_alpha()
                 self.colorcloth.fill(cloth[1])
                 self.cloth.blit(self.colorcloth, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
                 self.body.blit(self.cloth, (0, 0))
@@ -371,10 +505,20 @@ class Player(Human):
     def update(self, events, dt):
         if time_speed:
             self.age = self.detage + (pygame.time.get_ticks() - self.birth)/time_speed
-        self.build_sprite()
-        global camera
+        self.sprite_gen()
+        global step
+        global cam
         pressed = pygame.key.get_pressed()
         move = pygame.Vector2((0, 0))
+        time = pygame.time.get_ticks()
+        anim = self.idle_anim
+        if (time - self.step) >= 250:
+            if self.frame < (len(anim) - 1):
+                self.frame += 1
+            else:
+                self.frame = 0
+            print('STEP LOWERED MOVING TO FRAME', self.frame)
+            self.step = (int(time) - 1)
         if pressed[pygame.K_w]: 
             move += (0, -1)
         if pressed[pygame.K_a]: 
@@ -403,20 +547,20 @@ class Player(Human):
             move[0] = (move[0] - abs(move[0]))/2
         if self.rect.bottom > end_coords[1] - 2 * cellsize/16:
             move[1] = (move[1] - abs(move[1]))/2
-        self.pos += move*(dt/5)*(cellsize/16)*0.3
+        self.pos += move*(dt/5)*(cellsize/16)*0.16
         self.rect.center = self.pos
         if self.pos[0] > width/2 and self.pos[0] <= end_coords[0] - width/2:
-            camera[0] = self.pos[0] - width/2
+            cam[0] = self.pos[0] - width/2
         elif self.pos[0] <= width/2:
-            camera[0] = 0
+            cam[0] = 0
         elif self.pos[0] > end_coords[0]:
-            camera[0] = end_coords[0] - width/2
+            cam[0] = end_coords[0] - width/2
         if self.pos[1] > height/2 and self.pos[1] <= end_coords[1] - height/2:
-            camera[1] = self.pos[1] - height/2
+            cam[1] = self.pos[1] - height/2
         elif self.pos[1] <= height/2:
-            camera[1] = 0
+            cam[1] = 0
         elif self.pos[0] > end_coords[1]:
-            camera[0] = end_coords[1] - height/2
+            cam[0] = end_coords[1] - height/2
 
 
 class YAwareGroup(pygame.sprite.Group):
@@ -427,7 +571,8 @@ class YAwareGroup(pygame.sprite.Group):
         sprites = self.sprites()
         surface_blit = surface.blit
         for spr in sorted(sprites, key=self.by_y):
-            self.spritedict[spr] = surface_blit(spr.image, (spr.rect.x - camera[0], spr.rect.y - camera[1]))
+            self.spritedict[spr] = surface_blit(spr.image, \
+                           (spr.rect.x - cam[0], spr.rect.y - cam[1]))
         self.lostsprites = []
 
 
@@ -443,16 +588,12 @@ def setup_background():
     decs = [0, 0, 0, 0, 0, 0, plant1, plant1f, plant2, plant2f]
     tile_width, tile_height = plain.get_width(), plain.get_height()
     for x,y in product(range(0,tile_width * len(chunk[0][0]), tile_width),
-                                 range(0,tile_height * len(chunk[0][0]),tile_height)):
-        coord = [x - camera[0], y - camera[1]]
+                       range(0,tile_height * len(chunk[0][0]),tile_height)):
+        coord = [x - cam[0], y - cam[1]]
         screen.blit(plains[chunk[0][int(x/tile_width)][int(y/tile_height)]], coord)
         if decs[chunk[1][int(x/tile_width)][int(y/tile_height)]] != 0:
             screen.blit(decs[chunk[1][int(x/tile_width)][int(y/tile_height)]], coord)
         end_coords = [x + tile_width, y + tile_height]
-#    text = 'Year: ' + str(int(cur_year)) + ', Day: ' + str(int(cur_day)) + \
-#    ', Time: ' + str(int(cur_hour)) + ':' + str(int(cur_minute))
-#    textsurface = myfont.render(text , True, (250, 250, 250))
-#    screen.blit(textsurface,(10,10))
 
 
 def text_label():
@@ -476,9 +617,43 @@ def get_month(cur_day, leap_year):
         if cur_day in range(32, 60):
             num_month = 1
             cur_date = cur_day - 31
-        elif cur_day in range(60, 92):
+        elif cur_day in range(60, 91):
             num_month = 2
             cur_date = cur_day - 59
+        elif cur_day in range(91, 121):
+            num_month = 3
+            cur_date = cur_day - 90
+        elif cur_day in range(121, 152):
+            num_month = 4
+            cur_date = cur_day - 120
+        elif cur_day in range(152, 182):
+            num_month = 5
+            cur_date = cur_day - 151
+        elif cur_day in range(182, 213):
+            num_month = 6
+            cur_date = cur_day - 181
+        elif cur_day in range(213, 244):
+            num_month = 7
+            cur_date = cur_day - 212
+        elif cur_day in range(244, 275):
+            num_month = 8
+            cur_date = cur_day - 243
+        elif cur_day in range(275, 306):
+            num_month = 9
+            cur_date = cur_day - 274
+        elif cur_day in range(306, 336):
+            num_month = 10
+            cur_date = cur_day - 305
+        elif cur_day in range(335, 366):
+            num_month = 11
+            cur_date = cur_day - 334
+    if leap_year:
+        if cur_day in range(32, 61):
+            num_month = 1
+            cur_date = cur_day - 31
+        elif cur_day in range(61, 92):
+            num_month = 2
+            cur_date = cur_day - 60
         elif cur_day in range(92, 122):
             num_month = 3
             cur_date = cur_day - 91
@@ -494,47 +669,13 @@ def get_month(cur_day, leap_year):
         elif cur_day in range(214, 245):
             num_month = 7
             cur_date = cur_day - 213
-        elif cur_day in range(245, 275):
+        elif cur_day in range(245, 276):
             num_month = 8
             cur_date = cur_day - 244
-        elif cur_day in range(275, 306):
-            num_month = 9
-            cur_date = cur_day - 274
-        elif cur_day in range(306, 336):
-            num_month = 10
-            cur_date = cur_day - 305
-        elif cur_day in range(335, 366):
-            num_month = 11
-            cur_date = cur_day - 334
-    if leap_year:
-        if cur_day in range(32, 61):
-            num_month = 1
-            cur_date = cur_day - 31
-        elif cur_day in range(61, 93):
-            num_month = 2
-            cur_date = cur_day - 60
-        elif cur_day in range(93, 123):
-            num_month = 3
-            cur_date = cur_day - 92
-        elif cur_day in range(123, 154):
-            num_month = 4
-            cur_date = cur_day - 122
-        elif cur_day in range(154, 184):
-            num_month = 5
-            cur_date = cur_day - 153
-        elif cur_day in range(184, 215):
-            num_month = 6
-            cur_date = cur_day - 183
-        elif cur_day in range(215, 246):
-            num_month = 7
-            cur_date = cur_day - 214
-        elif cur_day in range(246, 276):
-            num_month = 8
-            cur_date = cur_day - 245
         elif cur_day in range(276, 307):
             num_month = 9
             cur_date = cur_day - 275
-        elif cur_day in range(307, 337):
+        elif cur_day in range(307, 336):
             num_month = 10
             cur_date = cur_day - 306
         elif cur_day in range(336, 367):
@@ -555,7 +696,6 @@ def time_cycle():
     if cur_year/4 - math.floor(cur_year/4) == 0:
         leap_year = True
     cur_day = 1 + (pygame.time.get_ticks()/time_speed - math.floor(cur_year)) * 365
-    print(cur_day)
     num_month, cur_date = get_month(cur_day, leap_year)
     cur_month = months[num_month]
     if leap_year:
@@ -590,23 +730,23 @@ def day_night_cycle():
         redness = 0
     elif redness > 1:
         redness = 1
-    if cur_tot_min < 5/24 or cur_tot_min > 11/24:
+    if cur_tot_min < 5/24 or cur_tot_min > 13/24:
         pinkness = 0
     else:
-        pinkness = 1 - abs(1 - (cur_tot_min - 5/24) * 18)
+        pinkness = 1 - abs(1 - (cur_tot_min - 5/24) * 24)
     if pinkness < 0:
         pinkness = 0
     elif pinkness > 1:
         pinkness = 1
     night_shader = [1 - darkness, 1 - darkness, 1 - (0.5 * darkness)]
     sunset_shader = [1, 1 - (0.5 * redness), 1 - redness]
-    sunrise_shader = [1, 1 - (0.4 * pinkness), 1 - (0.1 * pinkness)]
+    sunrise_shader = [1, 1 - (0.3 * pinkness), 1 - (0.2 * pinkness)]
     shader = [a * b * c * d for a, b, c, d in zip(preshader, night_shader, \
                                                   sunset_shader, sunrise_shader)]
 
 
 time_cycle()
-day_night_cycle()
+#day_night_cycle()
 
 chunk = np.array([np.ones((30, 30), dtype=int), \
                   np.random.randint(1, 10, size=(30, 30))])
@@ -643,7 +783,7 @@ while len(beast_coords) < 40:
 running = True
 while running:
     time_cycle()
-    day_night_cycle()
+#    day_night_cycle()
     sprites = YAwareGroup(beasts)
     events = pygame.event.get()
     for e in events:
