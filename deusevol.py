@@ -192,22 +192,62 @@ class Human(pygame.sprite.Sprite):
         frame2 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
         frame3 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
         frame4 = [(0, 0), (0, 0), (0, -1), (0, 0), (0, 0), (0, -1)]
-        frames = [frame1, frame2, frame3, frame4]
+        frame5 = [(0, -1), (0, 0), (0, -1), (0, 0), (0, -1), (0, -1)]
+        frame6 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame7 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame8 = [(0, 0), (0, 0), (0, -1), (0, 0), (0, 0), (0, -1)]
+        frame9 = [(0, -1), (0, 0), (0, -1), (0, 0), (0, -1), (0, -1)]
+        frame10 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame11 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame12 = [(0, 0), (0, 0), (0, -1), (0, 0), (0, 0), (0, -1)]
+        frame13 = [(0, -1), (0, 0), (0, -1), (0, 0), (0, -1), (0, -1)]
+        frame14 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame15 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame16 = [(0, 0), (0, 0), (0, -1), (0, 0), (0, 0), (0, -1)]
+        frames = [frame1, frame2, frame3, frame4, frame5, frame6, frame7, frame8, \
+                  frame9, frame10, frame11, frame12, frame13, frame14, frame15, frame16]
         self.idle_anim = create_anim(bodyparts, frames)
-        frame1 = [(0, -1), (0, 0), (0, -1), (0, 0), (0, -1), (0, -1)]
-        frame2 = [(0, 0), (-10, -14), (0, 0), (-24, -14), (0, 0), (0, 0)]
-        frame3 = [(0, 0), (-10, -14), (0, 0), (-24, -14), (0, 0), (0, 0)]
-        frame4 = [(0, 0), (0, 0), (0, -1), (0, 0), (0, 0), (0, -1)]
-        frames = [frame1, frame2, frame3, frame4]
+        frame1 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame2 = [(0, 0), (-3, -10), (0, 0), (-6, -6), (0, 0), (0, 0)]
+        frame3 = [(0, 0), (-5, -14), (0, 0), (-14, -10), (0, 0), (0, 0)]
+        frame4 = [(0, 0), (-7, -17), (0, 0), (-19, -14), (0, 0), (0, 0)]
+        frame5 = [(0, 0), (-10, -19), (0, 0), (-25, -17), (0, 0), (0, 0)]
+        frame6 = [(0, 0), (-7, -17), (0, 0), (-19, -14), (0, 0), (0, 0)]
+        frame7 = [(0, 0), (-5, -14), (0, 0), (-14, -10), (0, 0), (0, 0)]
+        frame8 = [(0, 0), (-3, -10), (0, 0), (-6, -6), (0, 0), (0, 0)]
+        frame9 = [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+        frame10 = [(0, 0), (-8, -10), (0, 0), (-4, -6), (0, 0), (0, 0)]
+        frame11 = [(0, 0), (-15, -14), (0, 0), (-8, -10), (0, 0), (0, 0)]
+        frame12 = [(0, 0), (-19, -17), (0, 0), (-8, -14), (0, 0), (0, 0)]
+        frame13 = [(0, 0), (-24, -19), (0, 0), (-8, -17), (0, 0), (0, 0)]
+        frame14 = [(0, 0), (-19, -17), (0, 0), (-8, -14), (0, 0), (0, 0)]
+        frame15 = [(0, 0), (-15, -14), (0, 0), (-8, -10), (0, 0), (0, 0)]
+        frame16 = [(0, 0), (-8, -10), (0, 0), (-4, -6), (0, 0), (0, 0)]
+        frames = [frame1, frame2, frame3, frame4, frame5, frame6, frame7, frame8, \
+                  frame9, frame10, frame11, frame12, frame13, frame14, frame15, frame16]
         rot1 = [0, 0, 0, 0, 0, 0]
-        rot2 = [0, -33, 0, 33, 0, 0]
-        rot3 = [0, -33, 0, 33, 0, 0]
-        rot4 = [0, 0, 0, 0, 0, 0]
-        rots = [rot1, rot2, rot3, rot4]
+        rot2 = [0, -8, 0, 8, 0, 0]
+        rot3 = [0, -15, 0, 15, 0, 0]
+        rot4 = [0, -24, 0, 24, 0, 0]
+        rot5 = [0, -33, 0, 33, 0, 0]
+        rot6 = [0, -24, 0, 24, 0, 0]
+        rot7 = [0, -15, 0, 15, 0, 0]
+        rot8 = [0, -8, 0, 8, 0, 0]
+        rot9 = [0, 0, 0, 0, 0, 0]
+        rot10 = [0, 8, 0, -8, 0, 0]
+        rot11 = [0, 15, 0, -15, 0, 0]
+        rot12 = [0, 24, 0, -24, 0, 0]
+        rot13 = [0, 33, 0, -33, 0, 0]
+        rot14 = [0, 24, 0, -24, 0, 0]
+        rot15 = [0, 15, 0, -15, 0, 0]
+        rot16 = [0, 8, 0, -8, 0, 0]
+        rots = [rot1, rot2, rot3, rot4, rot5, rot6, rot7, rot8, \
+                rot9, rot10, rot11, rot12, rot13, rot14, rot15, rot16]
         self.run_anim = create_anim(bodyparts, frames, rots)
+        self.anim = self.idle_anim
 
     def sprite_gen(self):
-        self.body = self.run_anim[self.frame]
+        self.body = self.anim[self.frame]
 #        self.body = pygame.transform.scale(self.run_anim[self.frame], (cellsize, cellsize))
         self.image = pygame.Surface((tilesize, tilesize + (1/tilesize)))
         self.image = pygame.image.load('graphics32/heart.png')
@@ -335,13 +375,6 @@ class Human(pygame.sprite.Sprite):
         move += (x, y)
         if move.length() > 0: move.normalize_ip()
         time = pygame.time.get_ticks()
-        anim = self.idle_anim
-        if (time - self.step) > 250:
-            if self.frame < (len(anim) - 1):
-                self.frame += 1
-            else:
-                self.frame = 0
-            self.step = time
         if x < 0:
             self.flipsprite = True
         else:
@@ -354,6 +387,16 @@ class Human(pygame.sprite.Sprite):
             move[0] = (move[0] - abs(move[0]))/2
         if self.rect.bottom > end_coords[1] - 2 * cellsize/16:
             move[1] = (move[1] - abs(move[1]))/2
+        if move:
+            self.anim = self.run_anim
+        else:
+            self.anim = self.idle_anim
+        if (time - self.step) > 40:
+            if self.frame < (len(self.anim) - 1):
+                self.frame += 1
+            else:
+                self.frame = 0
+            self.step = time
         self.pos += move*(dt/5)*(cellsize/16)*0.3
         self.rect.center = self.pos
             
@@ -511,14 +554,6 @@ class Player(Human):
         pressed = pygame.key.get_pressed()
         move = pygame.Vector2((0, 0))
         time = pygame.time.get_ticks()
-        anim = self.idle_anim
-        if (time - self.step) >= 250:
-            if self.frame < (len(anim) - 1):
-                self.frame += 1
-            else:
-                self.frame = 0
-            print('STEP LOWERED MOVING TO FRAME', self.frame)
-            self.step = (int(time) - 1)
         if pressed[pygame.K_w]: 
             move += (0, -1)
         if pressed[pygame.K_a]: 
@@ -547,6 +582,16 @@ class Player(Human):
             move[0] = (move[0] - abs(move[0]))/2
         if self.rect.bottom > end_coords[1] - 2 * cellsize/16:
             move[1] = (move[1] - abs(move[1]))/2
+        if move:
+            self.anim = self.run_anim
+        else:
+            self.anim = self.idle_anim
+        if (time - self.step) > 40:
+            if self.frame < (len(self.anim) - 1):
+                self.frame += 1
+            else:
+                self.frame = 0
+            self.step = time
         self.pos += move*(dt/5)*(cellsize/16)*0.16
         self.rect.center = self.pos
         if self.pos[0] > width/2 and self.pos[0] <= end_coords[0] - width/2:
@@ -746,7 +791,7 @@ def day_night_cycle():
 
 
 time_cycle()
-#day_night_cycle()
+day_night_cycle()
 
 chunk = np.array([np.ones((30, 30), dtype=int), \
                   np.random.randint(1, 10, size=(30, 30))])
@@ -783,7 +828,7 @@ while len(beast_coords) < 40:
 running = True
 while running:
     time_cycle()
-#    day_night_cycle()
+    day_night_cycle()
     sprites = YAwareGroup(beasts)
     events = pygame.event.get()
     for e in events:

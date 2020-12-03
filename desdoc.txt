@@ -119,11 +119,83 @@ Player psyche:
 
 
 
+hairtypes:
+forehead
+backhair
+mostache
+beard
 
 
 
 
 
+Lore:
+Tempus Nullus (real world) 
+Tempus Gnaeus
+Tempus Claudius Primus 
+Tempus Cellerius 
+Tempus Claudius Secundus 
+Tempus Rem Publicam
+
+Original divines:
+Gnaeus (??, First divine)
+Claudius Primus (??, only aspects left like Dmitry Kladov)
+Juno (Diane) was close to Gnaeus. Eventualy angered Claudius.
+
+Elder divines:
+Cellerius Major (Alexander Keller, Was divided by Claudius Secundus into a large amount of aspects, that represent death)
+Dmitry Kladov (aspect of Claudius Primus - Claudius Secundus)
+
+Younger divines:
+Antonius (??, ) Kladov's student
+Caetomius (Jove Hitomi) close friend of Antonius.
+
+Endings: 
+1) Tempus Claudius Tertius (Claudius kills the republicans or makes them give up)
+2) Tempus Cellerius Secundus ()
+	The time runs out. All aspects of Cellerius unite into Cellerius Major.
+3) Tempus Nullus Novus (Republicans and Gnaeus killed, Claudius gave up)
+	The humanity tores down the divine statues and curses all the divines. Eventually, they take down Claudius too, starting from his closest friends. New powerful humans are treated as living gods, even though they are against them. Claudius has nothing left to protect him or his close ones. He is left to die from hunger, until the last aspect of Cellerius comes to kill him.
+4) Tempus Gnaeus Secundus (Republicans killed, Claudius gave up)
+	Claudius accepts Gnaeuses point of view
+5) Tempus Rem Publicam (Caetomis, Antonius, Juno and Claudius rule the republic)
+6) Tempus Antonius (Caetomius and Juno killed)
+	Antonius starts a total war against Claudius. The elder gods are by his side.
+7) Tempus Caetomius (Juno and Antonius killed)
+8) Tempus Juno (Caetomius and Antonius killed)
+
+
+Cities:
+Pskov 
+Smolensk (Capital of Tempus Res Publica)
+Novgorod (Capital of Tempus Cellerius)
+Velikie Luki 
+Sebezh 
+Old Russa (heart of Tempus Nullus)
+Vyazma 
+Roslavl 
+Rzhev 
+Toropets 
+Torzhok 
+Tver 
+
+
+
+
+Months:
+
+ Gnaeum    	Гней
+February
+March
+April
+ Claudium	Клавдий
+ June		Июнь
+ Cellerium	Келлерий
+ Pogepium	Погепий
+ Crass		Красс
+ Antonium	Антоний
+ Caetomium	Кайтомий
+December
 
 
 
